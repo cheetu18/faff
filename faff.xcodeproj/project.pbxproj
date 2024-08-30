@@ -56,6 +56,7 @@
 		CDAC6E2C2C2C6A740019A8E7 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
 		CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaitemUIBlocks.swift; sourceTree = "<group>"; };
 		CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		CDD83FEF2C82914D005B6FFB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +87,7 @@
 		CD5A9E632C2487000007CCC7 = {
 			isa = PBXGroup;
 			children = (
+				CDD83FEF2C82914D005B6FFB /* .gitignore */,
 				CD5A9E6E2C2487000007CCC7 /* faff */,
 				CD5A9E812C2487020007CCC7 /* faffTests */,
 				CD5A9E8B2C2487020007CCC7 /* faffUITests */,
