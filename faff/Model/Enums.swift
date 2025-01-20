@@ -19,9 +19,9 @@ enum ProgressStatus: String, Codable, CaseIterable {
     
     var color: Color {
         switch self {
-        case .inProgress: return .blue
-        case .completed: return .green
-        case .repeated: return .purple
+        case .inProgress: return .duckWing
+        case .completed: return .duckNest
+        case .repeated: return .duckSunset
         }
     }
     
@@ -31,5 +31,17 @@ enum ProgressStatus: String, Codable, CaseIterable {
         case .completed: return "checkmark.circle.fill"
         case .repeated: return "arrow.clockwise.circle.fill"
         }
+    }
+}
+func mediaColor(_ type: MediaType) -> Color {
+    switch type {
+    case .book:
+        return .duckGold
+    case .podcast:
+        return .mallardGreen
+    case .movie:
+        return .duckFeet
+    case .other:
+        return .duckSlate
     }
 }

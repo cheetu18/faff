@@ -36,7 +36,10 @@ struct MediaItemView: View {
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
             }
-            .background(Color(UIColor.systemBackground))
+            //cream color background
+            //Color(red: 0.98, green: 0.96, blue: 0.94)
+            //.background(Color(UIColor.systemBackground))
+            .background(Color(red: 0.98, green: 0.96, blue: 0.94))
             .edgesIgnoringSafeArea(.bottom)
         }
         .sheet(isPresented: $showingAddWordOptions) {

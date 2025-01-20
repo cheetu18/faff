@@ -13,6 +13,8 @@
 		CD5A9E832C2487020007CCC7 /* faffTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5A9E822C2487020007CCC7 /* faffTests.swift */; };
 		CD5A9E8D2C2487020007CCC7 /* faffUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5A9E8C2C2487020007CCC7 /* faffUITests.swift */; };
 		CD5A9E8F2C2487020007CCC7 /* faffUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5A9E8E2C2487020007CCC7 /* faffUITestsLaunchTests.swift */; };
+		CD98A7382C8DF5440007424E /* VocabWordDetailedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD98A7372C8DF5440007424E /* VocabWordDetailedView.swift */; };
+		CD98A73A2C91E1820007424E /* DictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD98A7392C91E1820007424E /* DictionaryService.swift */; };
 		CDAC6E252C2C66430019A8E7 /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E242C2C66430019A8E7 /* MediaItem.swift */; };
 		CDAC6E272C2C66E80019A8E7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E262C2C66E80019A8E7 /* ContentView.swift */; };
 		CDAC6E292C2C69A20019A8E7 /* VocabWord.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E282C2C69A20019A8E7 /* VocabWord.swift */; };
@@ -20,6 +22,7 @@
 		CDAC6E2D2C2C6A740019A8E7 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E2C2C2C6A740019A8E7 /* MediaItemView.swift */; };
 		CDAC6E302C2C6C570019A8E7 /* MediaitemUIBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */; };
 		CDAC6E402C2CA5920019A8E7 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */; };
+		CDFCF3E32D2C681C0028C4B4 /* colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFCF3E22D2C681C0028C4B4 /* colors.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +52,8 @@
 		CD5A9E882C2487020007CCC7 /* faffUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = faffUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CD5A9E8C2C2487020007CCC7 /* faffUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = faffUITests.swift; sourceTree = "<group>"; };
 		CD5A9E8E2C2487020007CCC7 /* faffUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = faffUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		CD98A7372C8DF5440007424E /* VocabWordDetailedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabWordDetailedView.swift; sourceTree = "<group>"; };
+		CD98A7392C91E1820007424E /* DictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictionaryService.swift; sourceTree = "<group>"; };
 		CDAC6E242C2C66430019A8E7 /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
 		CDAC6E262C2C66E80019A8E7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CDAC6E282C2C69A20019A8E7 /* VocabWord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabWord.swift; sourceTree = "<group>"; };
@@ -57,6 +62,7 @@
 		CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaitemUIBlocks.swift; sourceTree = "<group>"; };
 		CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		CDD83FEF2C82914D005B6FFB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		CDFCF3E22D2C681C0028C4B4 /* colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = colors.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,7 +119,6 @@
 				CDAC6E1A2C29CEA90019A8E7 /* Model */,
 				CD5A9E752C2487020007CCC7 /* Assets.xcassets */,
 				CD5A9E772C2487020007CCC7 /* Preview Content */,
-				CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */,
 			);
 			path = faff;
 			sourceTree = "<group>";
@@ -149,6 +154,7 @@
 				CDAC6E242C2C66430019A8E7 /* MediaItem.swift */,
 				CDAC6E2A2C2C69C70019A8E7 /* Enums.swift */,
 				CDAC6E282C2C69A20019A8E7 /* VocabWord.swift */,
+				CD98A7392C91E1820007424E /* DictionaryService.swift */,
 				CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */,
 			);
 			path = Model;
@@ -158,7 +164,10 @@
 			isa = PBXGroup;
 			children = (
 				CDAC6E262C2C66E80019A8E7 /* ContentView.swift */,
+				CD98A7372C8DF5440007424E /* VocabWordDetailedView.swift */,
 				CDAC6E2C2C2C6A740019A8E7 /* MediaItemView.swift */,
+				CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */,
+				CDFCF3E22D2C681C0028C4B4 /* colors.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -299,6 +308,9 @@
 				CDAC6E402C2CA5920019A8E7 /* SampleData.swift in Sources */,
 				CDAC6E2B2C2C69C70019A8E7 /* Enums.swift in Sources */,
 				CDAC6E302C2C6C570019A8E7 /* MediaitemUIBlocks.swift in Sources */,
+				CDFCF3E32D2C681C0028C4B4 /* colors.swift in Sources */,
+				CD98A7382C8DF5440007424E /* VocabWordDetailedView.swift in Sources */,
+				CD98A73A2C91E1820007424E /* DictionaryService.swift in Sources */,
 				CD5A9E702C2487000007CCC7 /* faffApp.swift in Sources */,
 				CDAC6E292C2C69A20019A8E7 /* VocabWord.swift in Sources */,
 			);

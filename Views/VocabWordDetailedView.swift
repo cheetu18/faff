@@ -18,9 +18,10 @@ struct VocabWordDetailView: View {
     @State private var isShowingAddContextSheet = false
     
     let backgroundColor = Color(red: 0.98, green: 0.96, blue: 0.94) // Cream color
-    let accentColor = Color.blue
-    let gradientColors = [Color.blue, Color.purple]
-    
+    let accentColor = Color.black
+    let gradientColors = [Color.duckGold, Color.yellow, Color.orange]
+    //let gradientColors = [Color.blue, Color.purple]
+
     var body: some View {
         ZStack {
             backgroundColor.ignoresSafeArea()
@@ -154,39 +155,49 @@ struct VocabWordDetailView: View {
     }
     
     private var contextSection: some View {
-          Group {
-              if let context = vocabWord.context {
-                  VStack(alignment: .leading) {
-                      Text("Context")
-                          .font(.headline)
-                          .foregroundColor(accentColor)
-                      Text(context)
-                          .foregroundColor(.black)
-                  }
-                  .padding()
-                  .background(Color.white)
-                  .cornerRadius(10)
-                  .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
-              } else {
-                  Button(action: {
-                      isShowingAddContextSheet = true
-                  }) {
-                      Text("Add Context")
-                          .font(.headline)
-                          .foregroundColor(.white)
-                          .padding()
-                          .frame(maxWidth: .infinity)
-                          .background(
-                              RoundedRectangle(cornerRadius: 10)
-                                  .fill(accentColor)
-                          )
-                  }
-                  .shadow(color: Color.gray.opacity(0.3), radius: 5, x: 0, y: 2)
-              }
-          }
-      }
+        Group {
+            if let context = vocabWord.context {
+                Button(action: {
+                    isShowingAddContextSheet = true
+                }) {
+                    VStack(alignment: .leading) {
+                        Text("Context")
+                            .font(.headline)
+                            .foregroundColor(accentColor)
+                        Text(context)
+                            .foregroundColor(.black)
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+                }
+            } else {
+                Button(action: {
+                    isShowingAddContextSheet = true
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundColor(.black)
+                        .symbolEffect(.wiggle)
+                    Text("Add Context")
+                        .font(.title3)
+                        .foregroundColor(.black)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    //.background(
+                        //RoundedRectangle(cornerRadius: 10)
+                         //   .fill(accentColor)
+                   // )
+                }
+                .shadow(color: Color.gray.opacity(0.3), radius: 5, x: 0, y: 2)
+            }
+        }
+    }
       
-    
+    //Text(phonetic)
+     //   .font(.title3)
+      //  .foregroundColor(.black)
+
     private var learnButton: some View {
         Button(action: {
             // Action for learn button
@@ -224,6 +235,7 @@ struct VocabWordDetailView: View {
             
         } catch {
             errorMessage = "Failed to fetch definition: \(error.localizedDescription)"
+                
         }
         isLoading = false
     }
@@ -242,30 +254,86 @@ struct AddContextView: View {
     @State private var isShowingScanner = false
     
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Add Context")) {
+        ZStack {
+            // Full-screen background
+            Color.duckCream
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 20) {
+                // Header
+                Text("Add Context")
+                    .font(.headline)
+                    .foregroundColor(.duckSlate)
+                    .padding(.top, 20)
+                
+                // Text Editor Section
+                VStack(alignment: .leading, spacing: 10) {
                     TextEditor(text: $newContext)
                         .frame(height: 150)
-                    
-                    Button("Scan Context") {
-                        isShowingScanner = true
-                    }
+                        .padding(8)
+                        .background(Color.white)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.duckSlate.opacity(0.2), lineWidth: 1)
+                        )
                 }
+                .padding(.horizontal)
                 
-                Section {
-                    Button("Save") {
+                // Buttons Section
+                VStack(spacing: 16) {
+                    // Scan Button
+                    Button(action: {
+                        isShowingScanner = true
+                    }) {
+                        HStack {
+                            Image(systemName: "camera")
+                            Text("Scan Context")
+                        }
+                        .foregroundColor(.duckSlate)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 30)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.duckSlate, lineWidth: 1)
+                        )
+                    }
+                    
+                    // Save Button
+                    Button(action: {
                         vocabWord.context = newContext
                         dismiss()
+                    }) {
+                        Text("Save")
+                            .foregroundColor(.white)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .background(newContext.isEmpty ? Color.duckSlate.opacity(0.3) : Color.duckSlate)
+                            .cornerRadius(8)
                     }
                     .disabled(newContext.isEmpty)
                 }
+                .padding(.horizontal)
+                
+                Spacer()
             }
-            .navigationTitle("Add Context")
-            .navigationBarItems(trailing: Button("Cancel") { dismiss() })
-            .sheet(isPresented: $isShowingScanner) {
-                ScannerView(scannedText: $newContext)
+            
+            // Cancel Button
+            VStack {
+                HStack {
+                    Spacer()
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(.duckSlate)
+                    .padding()
+                }
+                Spacer()
             }
+        }
+        .sheet(isPresented: $isShowingScanner) {
+            ScannerView(scannedText: $newContext)
         }
     }
 }

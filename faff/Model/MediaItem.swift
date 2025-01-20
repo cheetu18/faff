@@ -5,13 +5,10 @@ import SwiftData
 class MediaItem {
     var title: String
     var creator: String
-    
-    //enums in enums class
     var mediaType: MediaType
     var progressStatus: ProgressStatus
-    
-    //cascade rule... if Media Item is deleted so are all the following words
-    @Relationship(deleteRule: .cascade) var learnedWords: [VocabWord]
+    @Relationship(deleteRule: .cascade)
+    var learnedWords: [VocabWord]
     
      
     init(title: String, creator: String, mediaType: MediaType, progressStatus: ProgressStatus = .inProgress, learnedWords: [VocabWord] = []) {

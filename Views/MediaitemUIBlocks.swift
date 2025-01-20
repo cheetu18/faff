@@ -45,14 +45,13 @@ struct WordCountBlock: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color.blue.opacity(0.1))
+        .background(Color.mallardGreen.opacity(0.1))
         .cornerRadius(10)
     }
 }
 
 struct LearnedWordsBlock: View {
     let words: [VocabWord]
-    
     var body: some View {
         VStack(alignment: .leading) {
             Text("Learned Words")
@@ -73,7 +72,8 @@ struct LearnedWordsBlock: View {
                                 .foregroundColor(.primary)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
-                                .background(Color.yellow.opacity(0.3))
+                                .background(Color.duckGold.opacity(0.3))
+                                //.background(Color.yellow.opacity(0.3))
                                 .clipShape(Capsule())
                         }
                     }
@@ -83,7 +83,9 @@ struct LearnedWordsBlock: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color.yellow.opacity(0.1))
+        //old yellow color
+        //.background(Color.yellow.opacity(0.1))
+        .background(Color.duckGold.opacity(0.1))
         .cornerRadius(10)
     }
 }
@@ -96,7 +98,7 @@ struct AddWordButton: View {
             Image(systemName: "plus")
                 .foregroundColor(.white)
                 .frame(width: 40, height: 40)
-                .background(Color.blue)
+                .background(Color.duckSlate)
                 .clipShape(Circle())
         }
     }
@@ -129,31 +131,82 @@ struct AddWordOptionsView: View {
     @State private var newWord = ""
     @Environment(\.dismiss) private var dismiss
     
+    private let creamColor = Color(red: 0.98, green: 0.96, blue: 0.94)
+    
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Add New Word")
-                .font(.headline)
+        ZStack {
+            // Full-screen background
+            creamColor
+                .edgesIgnoringSafeArea(.all)  // This ensures it goes edge to edge
             
-            TextField("Enter word", text: $newWord)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            
-            Button("Add Word") {
-                if !newWord.isEmpty {
-                    mediaItem.addWord(VocabWord(word: newWord))
-                    newWord = ""
-                    dismiss()
-                }
-                else {
+            // Content container
+            VStack {
+                Spacer()  // This pushes content down from top
+                
+                VStack(spacing: 24) {
+                    Text("Add New Word")
+                        .font(.headline)
+                        .foregroundColor(.duckSlate)
                     
+                    TextField("Enter word", text: $newWord)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                        .tint(.duckSlate)
+                    
+                    HStack(spacing: 20) {
+                        // Write/Add Word Button
+                        Button(action: {
+                            if !newWord.isEmpty {
+                                mediaItem.addWord(VocabWord(word: newWord))
+                                newWord = ""
+                                dismiss()
+                            }
+                        }) {
+                            VStack {
+                                Rectangle()
+                                    .fill(Color.duckSlate.opacity(0.1))
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Image(systemName: "pencil")
+                                            .foregroundColor(.duckSlate)
+                                            .font(.system(size: 24))
+                                    )
+                                
+                                Text("Add Word")
+                                    .foregroundColor(.duckSlate)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        
+                        // Scan Button
+                        Button(action: {
+                            // Scan action
+                        }) {
+                            VStack {
+                                Rectangle()
+                                    .fill(Color.duckSlate.opacity(0.1))
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Image(systemName: "camera")
+                                            .foregroundColor(.duckSlate)
+                                            .font(.system(size: 24))
+                                    )
+                                
+                                Text("Scan Word")
+                                    .foregroundColor(.duckSlate)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal)
                 }
+                .padding(.vertical, 30)
+                
+                Spacer()  // This pushes content up from bottom
+                Spacer()  // Adding an extra spacer to move content up more
             }
-            
-            Button("Scan Word") {
-                // Action to scan word (to be implemented)
-            }
+            .padding(.horizontal)
         }
-        .padding()
+        .background(creamColor)  // This ensures any gaps are filled with cream color
     }
 }
-
