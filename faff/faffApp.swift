@@ -11,7 +11,8 @@ import SwiftData
 @main
 struct faffApp: App {
         let container: ModelContainer
-        
+        @StateObject private var themeManager = ThemeManager.shared
+
         init() {
             do {
                 // Delete existing store in debug
@@ -37,7 +38,9 @@ struct faffApp: App {
         
         var body: some Scene {
             WindowGroup {
-                ContentView()
+                MainTabView()
+                    .environmentObject(themeManager)
+                    .preferredColorScheme(themeManager.theme.isDark ? .dark : .light)
             }
             .modelContainer(container)
         }

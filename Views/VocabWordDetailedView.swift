@@ -332,18 +332,12 @@ struct AddContextView: View {
                 Spacer()
             }
         }
-        .sheet(isPresented: $isShowingScanner) {
-            ScannerView(scannedText: $newContext)
+        .fullScreenCover(isPresented: $isShowingScanner) {
+            WordScannerView(theme: ThemeManager.shared.theme, mode: .phrase) { scanned in
+                newContext = newContext.isEmpty ? scanned
+                                                : newContext + " " + scanned
+            }
         }
-    }
-}
-
-struct ScannerView: View {
-    @Binding var scannedText: String
-    
-    var body: some View {
-        Text("Scanner Placeholder")
-            // Implement actual scanning functionality here
     }
 }
 #Preview {

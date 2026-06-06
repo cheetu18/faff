@@ -23,6 +23,7 @@
 		CDAC6E302C2C6C570019A8E7 /* MediaitemUIBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */; };
 		CDAC6E402C2CA5920019A8E7 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */; };
 		CDFCF3E32D2C681C0028C4B4 /* colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFCF3E22D2C681C0028C4B4 /* colors.swift */; };
+		DD01F00112345678000000A1 /* WordScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD01F00112345678000000B1 /* WordScannerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,6 +64,7 @@
 		CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		CDD83FEF2C82914D005B6FFB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		CDFCF3E22D2C681C0028C4B4 /* colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = colors.swift; sourceTree = "<group>"; };
+		DD01F00112345678000000B1 /* WordScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordScannerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,6 +170,7 @@
 				CDAC6E2C2C2C6A740019A8E7 /* MediaItemView.swift */,
 				CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */,
 				CDFCF3E22D2C681C0028C4B4 /* colors.swift */,
+				DD01F00112345678000000B1 /* WordScannerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -309,6 +312,7 @@
 				CDAC6E2B2C2C69C70019A8E7 /* Enums.swift in Sources */,
 				CDAC6E302C2C6C570019A8E7 /* MediaitemUIBlocks.swift in Sources */,
 				CDFCF3E32D2C681C0028C4B4 /* colors.swift in Sources */,
+				DD01F00112345678000000A1 /* WordScannerView.swift in Sources */,
 				CD98A7382C8DF5440007424E /* VocabWordDetailedView.swift in Sources */,
 				CD98A73A2C91E1820007424E /* DictionaryService.swift in Sources */,
 				CD5A9E702C2487000007CCC7 /* faffApp.swift in Sources */,
@@ -479,6 +483,7 @@
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -508,6 +513,7 @@
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -534,6 +540,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = world.faff.faffTests;
@@ -553,6 +560,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = world.faff.faffTests;
@@ -571,6 +579,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = world.faff.faffUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -588,6 +597,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = world.faff.faffUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
