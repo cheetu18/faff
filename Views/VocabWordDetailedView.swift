@@ -11,7 +11,8 @@ import AVFoundation
 
 struct VocabWordDetailView: View {
     @Bindable var vocabWord: VocabWord
-    @State private var dictionaryEntry: DictionaryEntry?
+    var fandomWiki: String? = nil
+    @State private var lookup: WordLookup?
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var audioPlayer: AVPlayer?
@@ -41,6 +42,17 @@ struct VocabWordDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await fetchDefinition()
+        }
+        .id(vocabWord.word)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await fetchDefinition(forceRefresh: true) }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .disabled(isLoading)
+            }
         }
         .sheet(isPresented: $isShowingAddContextSheet) {
             AddContextView(vocabWord: vocabWord)
@@ -103,29 +115,69 @@ struct VocabWordDetailView: View {
                 ProgressView()
                     .scaleEffect(1.5)
                     .foregroundColor(accentColor)
+            } else if let lookup {
+                VStack(alignment: .leading, spacing: 12) {
+                    sourceBadge(lookup)
+                    switch lookup.content {
+                    case .definitions(let meanings):
+                        dictionaryContent(meanings)
+                    case .prose(let text):
+                        proseContent(text)
+                    }
+                }
             } else if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
-            } else if let entry = dictionaryEntry {
-                dictionaryContent(entry)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(error)
+                        .foregroundColor(.secondary)
+                    Text("You can still add your own context below.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color.white)
+                .cornerRadius(10)
+                .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
             }
         }
     }
-    
-    private func dictionaryContent(_ entry: DictionaryEntry) -> some View {
+
+    private func sourceBadge(_ lookup: WordLookup) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: lookup.isLore ? "sparkles" : "character.book.closed")
+                .font(.caption)
+            Text(lookup.isLore ? "Lore from \(lookup.sourceLabel)" : "from \(lookup.sourceLabel)")
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Color.black.opacity(0.05))
+        .clipShape(Capsule())
+    }
+
+    private func dictionaryContent(_ meanings: [Meaning]) -> some View {
         VStack(alignment: .leading, spacing: 15) {
-            ForEach(entry.meanings, id: \.partOfSpeech) { meaning in
+            ForEach(Array(meanings.enumerated()), id: \.offset) { _, meaning in
                 meaningSection(meaning)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color.white)
         .cornerRadius(15)
         .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+    }
+
+    private func proseContent(_ text: String) -> some View {
+        Text(text)
+            .font(.body)
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(Color.white)
+            .cornerRadius(15)
+            .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
     }
     
     private func meaningSection(_ meaning: Meaning) -> some View {
@@ -218,24 +270,30 @@ struct VocabWordDetailView: View {
     }
     
 
-    private func fetchDefinition() async {
+    private func fetchDefinition(forceRefresh: Bool = false) async {
+        // Instant path: use the cached lookup unless a refresh was requested.
+        if !forceRefresh, let cached = vocabWord.cachedLookup() {
+            lookup = cached
+            errorMessage = nil
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         do {
-            let entry = try await DictionaryService.fetchDefinition(for: vocabWord.word)
-            dictionaryEntry = entry
-            
-            // Update VocabWord with phonetic information
+            let result = try await DictionaryService.lookup(term: vocabWord.word, fandomWiki: fandomWiki)
+            lookup = result
+            vocabWord.storeLookup(result)
+
+            // Cache phonetic info when the source provided it.
             if vocabWord.phonetic == nil {
-                vocabWord.phonetic = entry.phonetic ?? entry.phonetics.first?.text
+                vocabWord.phonetic = result.phonetic
             }
             if vocabWord.phoneticUrl == nil {
-                vocabWord.phoneticUrl = entry.phonetics.first?.audio
+                vocabWord.phoneticUrl = result.phoneticAudioURL
             }
-            
         } catch {
-            errorMessage = "Failed to fetch definition: \(error.localizedDescription)"
-                
+            errorMessage = error.localizedDescription
         }
         isLoading = false
     }

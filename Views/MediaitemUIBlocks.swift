@@ -76,6 +76,7 @@ struct WordCountBlock: View {
 
 struct LearnedWordsBlock: View {
     let words: [VocabWord]
+    var fandomWiki: String? = nil
     var theme: AppTheme = ColorPack.rubberDucky.theme
 
     var body: some View {
@@ -94,7 +95,7 @@ struct LearnedWordsBlock: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10) {
                         ForEach(words) { word in
-                            NavigationLink(destination: VocabWordDetailView(vocabWord: word)) {
+                            NavigationLink(destination: VocabWordDetailView(vocabWord: word, fandomWiki: fandomWiki)) {
                                 HStack {
                                     Text(word.word)
                                         .foregroundColor(theme.textPrimary)

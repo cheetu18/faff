@@ -15,22 +15,22 @@ struct faffApp: App {
 
         init() {
             do {
-                // Delete existing store in debug
-                #if DEBUG
-                try? FileManager.default.removeItem(
-                    at: URL.applicationSupportDirectory.appendingPathComponent("default.store")
-                )
-                #endif
-                
                 container = try ModelContainer(
                     for: MediaItem.self,
                     configurations: ModelConfiguration(isStoredInMemoryOnly: false)
                 )
-                
+
+                // Seed sample data only on a fresh (empty) store so that the
+                // user's real data — including imports and cached definitions —
+                // persists across launches. Release builds start empty and are
+                // populated by the user (manually or via import).
                 #if DEBUG
-                SampleData.generateSampleData(modelContext: container.mainContext)
+                let context = container.mainContext
+                let existing = (try? context.fetchCount(FetchDescriptor<MediaItem>())) ?? 0
+                if existing == 0 {
+                    SampleData.generateSampleData(modelContext: context)
+                }
                 #endif
-                
             } catch {
                 fatalError("Failed to create container: \(error.localizedDescription)")
             }

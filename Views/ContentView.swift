@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 // MARK: - Root tab container
 
@@ -189,6 +190,7 @@ struct AddMediaView: View {
     @State private var title = ""
     @State private var creator = ""
     @State private var selectedType: MediaType = .book
+    @State private var fandomWiki = ""
 
     private var theme: AppTheme { themeManager.theme }
 
@@ -217,6 +219,19 @@ struct AddMediaView: View {
                     }
                     .pickerStyle(.segmented)
 
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("Fandom wiki (optional)", text: $fandomWiki)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .padding()
+                            .glassCard(cornerRadius: 14, tint: theme.surface)
+                            .tint(theme.primary)
+                        Text("For invented words. Enter the wiki subdomain, e.g. \u{201C}dune\u{201D} for dune.fandom.com.")
+                            .font(.caption)
+                            .foregroundColor(theme.textSecondary)
+                            .padding(.horizontal, 4)
+                    }
+
                     Spacer()
                 }
                 .padding()
@@ -240,7 +255,13 @@ struct AddMediaView: View {
     }
 
     private func addMedia() {
-        let newItem = MediaItem(title: title, creator: creator, mediaType: selectedType)
+        let wiki = fandomWiki.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newItem = MediaItem(
+            title: title,
+            creator: creator,
+            mediaType: selectedType,
+            fandomWiki: wiki.isEmpty ? nil : wiki
+        )
         modelContext.insert(newItem)
         try? modelContext.save()
     }
@@ -250,6 +271,16 @@ struct AddMediaView: View {
 
 struct SettingsView: View {
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.modelContext) private var modelContext
+    @Query private var mediaItems: [MediaItem]
+
+    @State private var exportDocument: TransferDocument?
+    @State private var exportContentType: UTType = .json
+    @State private var exportFilename = "faff-words"
+    @State private var showingExporter = false
+    @State private var showingImporter = false
+    @State private var resultMessage: String?
+    @State private var showingResult = false
 
     private var theme: AppTheme { themeManager.theme }
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 16)]
@@ -282,12 +313,113 @@ struct SettingsView: View {
                                 }
                             }
                         }
+
+                        dataSection
                     }
                     .padding()
                 }
             }
             .navigationTitle("Settings")
+            .fileExporter(
+                isPresented: $showingExporter,
+                document: exportDocument,
+                contentType: exportContentType,
+                defaultFilename: exportFilename
+            ) { _ in }
+            .fileImporter(
+                isPresented: $showingImporter,
+                allowedContentTypes: [.json, .commaSeparatedText, .plainText, .text]
+            ) { result in
+                handleImport(result)
+            }
+            .alert("Import", isPresented: $showingResult) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(resultMessage ?? "")
+            }
         }
+    }
+
+    private var dataSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("YOUR DATA")
+                .font(.caption.weight(.bold))
+                .foregroundColor(theme.textSecondary)
+                .padding(.leading, 4)
+
+            LazyVGrid(columns: columns, spacing: 16) {
+                dataButton(title: "Export JSON", systemImage: "arrow.up.doc.fill") {
+                    exportContentType = .json
+                    exportFilename = "faff-words"
+                    exportDocument = TransferDocument(data: WordDataTransfer.exportJSON(mediaItems),
+                                                      contentType: .json)
+                    showingExporter = true
+                }
+                dataButton(title: "Export CSV", systemImage: "tablecells.fill") {
+                    exportContentType = .commaSeparatedText
+                    exportFilename = "faff-words"
+                    exportDocument = TransferDocument(data: WordDataTransfer.exportCSV(mediaItems),
+                                                      contentType: .commaSeparatedText)
+                    showingExporter = true
+                }
+                dataButton(title: "Import File", systemImage: "arrow.down.doc.fill") {
+                    showingImporter = true
+                }
+            }
+
+            Text("\(mediaItems.count) lists • \(mediaItems.reduce(0) { $0 + $1.learnedWords.count }) words. Export to back up or analyze elsewhere; import adds lists that aren\u{2019}t already here.")
+                .font(.caption)
+                .foregroundColor(theme.textSecondary)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private func dataButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.title2)
+                    .foregroundColor(theme.primary)
+
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(theme.textPrimary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.vertical, 22)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity)
+            .background(theme.background)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(theme.surfaceStroke, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.04), radius: 3, y: 2)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let data = try Data(contentsOf: url)
+                let format: WordDataFormat = url.pathExtension.lowercased() == "json" ? .json : .csv
+                let exports = try WordDataTransfer.parse(data, format: format)
+                let added = WordDataTransfer.importItems(exports, into: modelContext, existing: mediaItems)
+                resultMessage = added.lists == 0
+                    ? "Nothing new to import — those lists are already here."
+                    : "Imported \(added.lists) lists and \(added.words) words."
+            } catch {
+                resultMessage = "Import failed: \(error.localizedDescription)"
+            }
+        case .failure(let error):
+            resultMessage = "Import failed: \(error.localizedDescription)"
+        }
+        showingResult = true
     }
 
     private var livePreview: some View {
@@ -384,6 +516,32 @@ private struct ColorPackCard: View {
     }
 }
 
+// MARK: - Transfer document
+
+/// Lightweight FileDocument used by the export sheet to write JSON or CSV.
+struct TransferDocument: FileDocument {
+    static var readableContentTypes: [UTType] {
+        [.json, .commaSeparatedText, .plainText, .text]
+    }
+
+    var data: Data
+    var contentType: UTType
+
+    init(data: Data, contentType: UTType) {
+        self.data = data
+        self.contentType = contentType
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+        contentType = .json
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
+
 // MARK: - Previews
 
 #Preview("App") {
@@ -401,6 +559,15 @@ private struct ColorPackCard: View {
 }
 
 #Preview("Settings") {
-    SettingsView()
-        .environmentObject(ThemeManager.shared)
+    do {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: MediaItem.self, configurations: config)
+        SampleData.generateSampleData(modelContext: container.mainContext)
+
+        return SettingsView()
+            .modelContainer(container)
+            .environmentObject(ThemeManager.shared)
+    } catch {
+        return Text("Failed to create preview: \(error.localizedDescription)")
+    }
 }

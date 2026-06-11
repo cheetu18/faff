@@ -68,9 +68,9 @@ struct SampleData {
         neuromancerWords[3].context = "Intrusion Countermeasures Electronics - security software"
 
         let books = [
-            MediaItem(title: "Dune", creator: "Frank Herbert", mediaType: .book, learnedWords: duneWords),
+            MediaItem(title: "Dune", creator: "Frank Herbert", mediaType: .book, fandomWiki: "dune", learnedWords: duneWords),
             MediaItem(title: "1984", creator: "George Orwell", mediaType: .book, learnedWords: orwellWords),
-            MediaItem(title: "The Hobbit", creator: "J.R.R. Tolkien", mediaType: .book, learnedWords: hobbitWords),
+            MediaItem(title: "The Hobbit", creator: "J.R.R. Tolkien", mediaType: .book, fandomWiki: "lotr", learnedWords: hobbitWords),
             MediaItem(title: "Pride and Prejudice", creator: "Jane Austen", mediaType: .book, learnedWords: prideWords),
             MediaItem(title: "Neuromancer", creator: "William Gibson", mediaType: .book, learnedWords: neuromancerWords),
             MediaItem(title: "The Great Gatsby", creator: "F. Scott Fitzgerald", mediaType: .book)
