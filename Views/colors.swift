@@ -73,9 +73,11 @@ struct AppTheme: Equatable {
 enum ColorPack: String, CaseIterable, Identifiable {
     case rubberDucky    // classic black / yellow / orange — the default
     case mallard        // slate + mallard green + gold
-    case midnightDrake  // dark mode
+    case bufflehead     // crisp white + black + iridescent sheen
     case pinkPreen      // soft pink
-    case bluebill       // cool blue
+    case mandarin       // vivid orange + plum + teal
+    case ruddy          // warm rust + sky-blue bill
+    case harlequin      // dark: deep slate-blue + chestnut + white stripes
 
     var id: String { rawValue }
 
@@ -115,20 +117,22 @@ enum ColorPack: String, CaseIterable, Identifiable {
                 textSecondary:  Color(0.45, 0.52, 0.60),
                 onPrimary:      .white
             )
-        case .midnightDrake:
+        case .bufflehead:
+            // Crisp bufflehead white as the dominant color, with bold black
+            // and a subtle iridescent green/purple sheen for accents.
             return AppTheme(
                 id: rawValue,
-                name: "Midnight Drake",
-                symbol: "moon.stars.fill",
-                isDark: true,
-                background:     Color(0.10, 0.09, 0.16),
-                surface:        Color(0.17, 0.16, 0.25),
-                surfaceStroke:  Color(0.55, 0.50, 0.95).opacity(0.30),
-                primary:        Color(0.56, 0.51, 0.95),
-                secondary:      Color(0.40, 0.72, 0.95),
-                accent:         Color(0.96, 0.62, 0.86),
-                textPrimary:    Color(0.94, 0.94, 0.98),
-                textSecondary:  Color(0.66, 0.65, 0.78),
+                name: "Bufflehead",
+                symbol: "circle.lefthalf.filled",
+                isDark: false,
+                background:     Color(0.97, 0.98, 0.99),
+                surface:        .white,
+                surfaceStroke:  Color(0.14, 0.16, 0.18).opacity(0.16),
+                primary:        Color(0.14, 0.16, 0.18),
+                secondary:      Color(0.40, 0.28, 0.55),
+                accent:         Color(0.10, 0.52, 0.48),
+                textPrimary:    Color(0.13, 0.15, 0.18),
+                textSecondary:  Color(0.45, 0.48, 0.53),
                 onPrimary:      .white
             )
         case .pinkPreen:
@@ -147,21 +151,59 @@ enum ColorPack: String, CaseIterable, Identifiable {
                 textSecondary:  Color(0.58, 0.46, 0.53),
                 onPrimary:      .white
             )
-        case .bluebill:
+        case .mandarin:
+            // Ornate mandarin drake: vivid orange sail feathers, a plum breast,
+            // and a teal flash.
             return AppTheme(
                 id: rawValue,
-                name: "Bluebill",
-                symbol: "water.waves",
+                name: "Mandarin",
+                symbol: "crown.fill",
                 isDark: false,
-                background:     Color(0.94, 0.97, 0.99),
+                background:     Color(0.99, 0.97, 0.93),
                 surface:        .white,
-                surfaceStroke:  Color(0.10, 0.45, 0.65).opacity(0.20),
-                primary:        Color(0.10, 0.45, 0.65),
-                secondary:      Color(0.20, 0.62, 0.72),
-                accent:         Color(0.96, 0.72, 0.35),
-                textPrimary:    Color(0.12, 0.25, 0.35),
-                textSecondary:  Color(0.40, 0.55, 0.62),
+                surfaceStroke:  Color(0.87, 0.43, 0.13).opacity(0.20),
+                primary:        Color(0.87, 0.43, 0.13),
+                secondary:      Color(0.52, 0.26, 0.46),
+                accent:         Color(0.10, 0.56, 0.58),
+                textPrimary:    Color(0.30, 0.18, 0.12),
+                textSecondary:  Color(0.52, 0.42, 0.36),
                 onPrimary:      .white
+            )
+        case .ruddy:
+            // Warm cinnamon body with the ruddy duck's signature blue bill.
+            return AppTheme(
+                id: rawValue,
+                name: "Ruddy Duck",
+                symbol: "flame.fill",
+                isDark: false,
+                background:     Color(0.99, 0.96, 0.92),
+                surface:        .white,
+                surfaceStroke:  Color(0.70, 0.30, 0.18).opacity(0.20),
+                primary:        Color(0.70, 0.30, 0.18),
+                secondary:      Color(0.84, 0.52, 0.24),
+                accent:         Color(0.26, 0.64, 0.90),
+                textPrimary:    Color(0.30, 0.17, 0.12),
+                textSecondary:  Color(0.52, 0.40, 0.34),
+                onPrimary:      .white
+            )
+        case .harlequin:
+            // The only dark pack: a harlequin drake on whitewater at dusk.
+            // Deep slate-blue plumage, chestnut flanks, and the bird's crisp
+            // white face and neck stripes.
+            return AppTheme(
+                id: rawValue,
+                name: "Harlequin",
+                symbol: "moon.stars.fill",
+                isDark: true,
+                background:     Color(0.07, 0.09, 0.15),
+                surface:        Color(0.13, 0.17, 0.26),
+                surfaceStroke:  Color(0.93, 0.95, 0.98).opacity(0.14),
+                primary:        Color(0.80, 0.42, 0.24),
+                secondary:      Color(0.36, 0.48, 0.70),
+                accent:         Color(0.93, 0.95, 0.98),
+                textPrimary:    Color(0.93, 0.95, 0.98),
+                textSecondary:  Color(0.62, 0.68, 0.78),
+                onPrimary:      Color(0.07, 0.09, 0.15)
             )
         }
     }
@@ -169,14 +211,16 @@ enum ColorPack: String, CaseIterable, Identifiable {
 
 // MARK: - ThemeManager
 
-/// Holds the active color pack and persists the choice. Inject into the
-/// environment at the app root and observe it where the UI needs to react.
-final class ThemeManager: ObservableObject {
+/// Holds the active color pack and persists the choice. Injected into the
+/// environment at the app root; views read it with `@Environment(ThemeManager.self)`.
+@MainActor
+@Observable
+final class ThemeManager {
     static let shared = ThemeManager()
 
     private let storageKey = "selectedColorPack"
 
-    @Published var pack: ColorPack {
+    var pack: ColorPack {
         didSet { UserDefaults.standard.set(pack.rawValue, forKey: storageKey) }
     }
 
@@ -191,24 +235,62 @@ final class ThemeManager: ObservableObject {
 // MARK: - Liquid Glass surface
 
 extension View {
-    /// A reusable "Liquid Glass" surface.
+    /// A reusable Liquid Glass surface.
     ///
-    /// On iOS 26+ this uses Apple's real `.glassEffect`. On earlier systems it
-    /// falls back to a translucent material so the app still looks glassy.
-    @ViewBuilder
+    /// This owns the whole surface treatment, edge included. Do not stack a
+    /// `.stroke` overlay on top of it: the glass material already renders its
+    /// own border, and drawing a second one over it reads as a hard hairline
+    /// that fights the material's specular edge.
     func glassCard(cornerRadius: CGFloat = 20,
                    tint: Color? = nil,
                    interactive: Bool = false) -> some View {
-        if #available(iOS 26.0, *) {
-            self.glassEffect(
-                .regular.tint(tint).interactive(interactive),
-                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            )
-        } else {
-            self.background(
-                .ultraThinMaterial,
-                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            )
+        glassEffect(
+            .regular.tint(tint).interactive(interactive),
+            in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        )
+    }
+}
+
+// MARK: - Themed navigation title
+
+extension View {
+    /// Renders the navigation title in the theme's primary color.
+    ///
+    /// This replaces the old global `UINavigationBar.appearance()` override.
+    /// Supplying a custom title view through the `.largeTitle` / `.title`
+    /// toolbar placements is the supported route, and unlike the appearance
+    /// proxy it is scoped to this view and leaves the bar's Liquid Glass
+    /// scroll-edge behavior intact.
+    /// Only the `.largeTitle` placement is supplied. Providing `.title` as well
+    /// renders the title twice — the bar draws the inline item *and* the large
+    /// one rather than swapping between them — so the inline presentation is
+    /// left to `navigationTitle`, which also feeds the back button.
+    /// Pass `nil` to show no visible header (e.g. a tab root whose tab label
+    /// already says what it is). The view's identity stays stable either way.
+    func themedNavigationTitle(_ title: String?, theme: AppTheme) -> some View {
+        navigationTitle(title ?? "")
+            .navigationBarTitleDisplayMode(title == nil ? .inline : .automatic)
+            .toolbar {
+                if let title {
+                    ToolbarItem(placement: .largeTitle) {
+                        Text(title)
+                            .font(.largeTitle.weight(.bold))
+                            .foregroundStyle(theme.primary)
+                    }
+                }
+            }
+    }
+}
+
+/// Groups adjacent glass surfaces so they blend and morph as one system
+/// instead of compositing independently. Wrap sibling `glassCard`s in this.
+struct GlassGroup<Content: View>: View {
+    var spacing: CGFloat = 14
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        GlassEffectContainer(spacing: spacing) {
+            content
         }
     }
 }

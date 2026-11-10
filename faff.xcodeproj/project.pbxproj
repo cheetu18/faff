@@ -22,6 +22,10 @@
 		CDAC6E2D2C2C6A740019A8E7 /* MediaItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E2C2C2C6A740019A8E7 /* MediaItemView.swift */; };
 		CDAC6E302C2C6C570019A8E7 /* MediaitemUIBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */; };
 		CDAC6E402C2CA5920019A8E7 /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */; };
+		CDD624D530439B9A00D6C88C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CDD624D430439B9A00D6C88C /* PrivacyInfo.xcprivacy */; };
+		CDD624D730439C7900D6C88C /* Reordering.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDD624D630439C7900D6C88C /* Reordering.swift */; };
+		CDD624D9304472CB00D6C88C /* FandomDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDD624D8304472CB00D6C88C /* FandomDirectory.swift */; };
+		CDD624DB304472CB00D6C88C /* PronunciationPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDD624DA304472CB00D6C88C /* PronunciationPlayer.swift */; };
 		CDFCF3E32D2C681C0028C4B4 /* colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDFCF3E22D2C681C0028C4B4 /* colors.swift */; };
 		DD01F00112345678000000A1 /* WordScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD01F00112345678000000B1 /* WordScannerView.swift */; };
 /* End PBXBuildFile section */
@@ -62,6 +66,10 @@
 		CDAC6E2C2C2C6A740019A8E7 /* MediaItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItemView.swift; sourceTree = "<group>"; };
 		CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaitemUIBlocks.swift; sourceTree = "<group>"; };
 		CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		CDD624D430439B9A00D6C88C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CDD624D630439C7900D6C88C /* Reordering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reordering.swift; sourceTree = "<group>"; };
+		CDD624D8304472CB00D6C88C /* FandomDirectory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FandomDirectory.swift; sourceTree = "<group>"; };
+		CDD624DA304472CB00D6C88C /* PronunciationPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PronunciationPlayer.swift; sourceTree = "<group>"; };
 		CDD83FEF2C82914D005B6FFB /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		CDFCF3E22D2C681C0028C4B4 /* colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = colors.swift; sourceTree = "<group>"; };
 		DD01F00112345678000000B1 /* WordScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordScannerView.swift; sourceTree = "<group>"; };
@@ -121,6 +129,7 @@
 				CDAC6E1A2C29CEA90019A8E7 /* Model */,
 				CD5A9E752C2487020007CCC7 /* Assets.xcassets */,
 				CD5A9E772C2487020007CCC7 /* Preview Content */,
+				CDD624D430439B9A00D6C88C /* PrivacyInfo.xcprivacy */,
 			);
 			path = faff;
 			sourceTree = "<group>";
@@ -158,6 +167,8 @@
 				CDAC6E282C2C69A20019A8E7 /* VocabWord.swift */,
 				CD98A7392C91E1820007424E /* DictionaryService.swift */,
 				CDAC6E3F2C2CA5920019A8E7 /* SampleData.swift */,
+				CDD624D8304472CB00D6C88C /* FandomDirectory.swift */,
+				CDD624DA304472CB00D6C88C /* PronunciationPlayer.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -171,6 +182,7 @@
 				CDAC6E2F2C2C6C570019A8E7 /* MediaitemUIBlocks.swift */,
 				CDFCF3E22D2C681C0028C4B4 /* colors.swift */,
 				DD01F00112345678000000B1 /* WordScannerView.swift */,
+				CDD624D630439C7900D6C88C /* Reordering.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -279,6 +291,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDD624D530439B9A00D6C88C /* PrivacyInfo.xcprivacy in Resources */,
 				CD5A9E792C2487020007CCC7 /* Preview Assets.xcassets in Resources */,
 				CD5A9E762C2487020007CCC7 /* Assets.xcassets in Resources */,
 			);
@@ -305,6 +318,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDD624D9304472CB00D6C88C /* FandomDirectory.swift in Sources */,
+				CDD624DB304472CB00D6C88C /* PronunciationPlayer.swift in Sources */,
+				CDD624D730439C7900D6C88C /* Reordering.swift in Sources */,
 				CDAC6E2D2C2C6A740019A8E7 /* MediaItemView.swift in Sources */,
 				CDAC6E272C2C66E80019A8E7 /* ContentView.swift in Sources */,
 				CDAC6E252C2C66430019A8E7 /* MediaItem.swift in Sources */,
@@ -483,12 +499,14 @@
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -513,12 +531,14 @@
 				DEVELOPMENT_TEAM = 6GH7FZ4F6R;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "faff uses the camera to scan words you spot while reading, watching, or listening.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

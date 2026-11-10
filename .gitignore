@@ -22,3 +22,6 @@ playground.xcworkspace
 # Package.pins
 # Package.resolved
 # *.xcodeproj
+
+# macOS
+.DS_Store

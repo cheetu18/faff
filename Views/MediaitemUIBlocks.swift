@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import SwiftData
 
 // MARK: - Header
 
@@ -20,19 +21,19 @@ struct HeaderBlock: View {
         VStack(spacing: 6) {
             Image(systemName: mediaSymbol(mediaType))
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(theme.onPrimary)
+                .foregroundStyle(theme.onPrimary)
                 .frame(width: 52, height: 52)
                 .background(theme.media(mediaType))
                 .clipShape(Circle())
 
             Text(title)
                 .font(.largeTitle.weight(.bold))
-                .foregroundColor(theme.textPrimary)
+                .foregroundStyle(theme.textPrimary)
                 .multilineTextAlignment(.center)
 
             Text("\(mediaTypeString) by \(creator)")
                 .font(.subheadline)
-                .foregroundColor(theme.textSecondary)
+                .foregroundStyle(theme.textSecondary)
         }
     }
 
@@ -56,75 +57,107 @@ struct WordCountBlock: View {
         VStack(spacing: 2) {
             Text("\(count)")
                 .font(.system(size: 60, weight: .bold, design: .rounded))
-                .foregroundColor(theme.primary)
+                .foregroundStyle(theme.primary)
                 .contentTransition(.numericText())
             Text("Words Learned")
                 .font(.headline)
-                .foregroundColor(theme.textSecondary)
+                .foregroundStyle(theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding()
         .glassCard(cornerRadius: 20, tint: theme.secondary.opacity(0.25))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(theme.surfaceStroke, lineWidth: 1)
-        )
     }
 }
 
 // MARK: - Learned words
 
 struct LearnedWordsBlock: View {
-    let words: [VocabWord]
-    var fandomWiki: String? = nil
+    @Bindable var mediaItem: MediaItem
     var theme: AppTheme = ColorPack.rubberDucky.theme
+
+    @Environment(\.modelContext) private var modelContext
+
+    private var words: [VocabWord] { mediaItem.orderedWords }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Learned Words")
                 .font(.headline)
-                .foregroundColor(theme.textPrimary)
+                .foregroundStyle(theme.textPrimary)
 
             if words.isEmpty {
                 Text("No words yet — tap + to add your first one.")
                     .font(.subheadline)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundStyle(theme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 8)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10) {
                         ForEach(words) { word in
-                            NavigationLink(destination: VocabWordDetailView(vocabWord: word, fandomWiki: fandomWiki)) {
-                                HStack {
-                                    Text(word.word)
-                                        .foregroundColor(theme.textPrimary)
-                                    Spacer()
-                                    if word.tracked {
-                                        Image(systemName: "star.fill")
-                                            .font(.caption)
-                                            .foregroundColor(theme.accent)
-                                    }
+                            NavigationLink(destination: VocabWordDetailView(vocabWord: word,
+                                                                            fandomWiki: mediaItem.fandomWiki)) {
+                                wordChip(word)
+                            }
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    delete(word)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(theme.accent.opacity(0.22))
-                                .clipShape(Capsule())
+                            }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    delete(word)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                         }
+                        .reorderable()
                     }
                     .padding(.horizontal, 2)
+                    .reorderContainer(for: VocabWord.self) { difference in
+                        reorder(difference)
+                    }
                 }
+                .swipeActionsContainer()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .glassCard(cornerRadius: 20, tint: theme.accent.opacity(0.18))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(theme.surfaceStroke, lineWidth: 1)
-        )
+    }
+
+    private func wordChip(_ word: VocabWord) -> some View {
+        HStack {
+            Text(word.word)
+                .foregroundStyle(theme.isDark ? .white : .black)
+            Spacer()
+            if word.tracked {
+                Image(systemName: "star.fill")
+                    .font(.caption)
+                    .foregroundStyle(theme.isDark ? .white : .black)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.accent.opacity(theme.isDark ? 0.30 : 0.22))
+        .clipShape(Capsule())
+    }
+
+    private func reorder(_ difference: ReorderDifference<VocabWord.ID, ReorderableSingleCollectionIdentifier>) {
+        var ordered = words
+        difference.apply(to: &ordered)
+        mediaItem.applyWordOrder(ordered)
+        try? modelContext.save()
+    }
+
+    private func delete(_ word: VocabWord) {
+        mediaItem.learnedWords.removeAll { $0.id == word.id }
+        modelContext.delete(word)
+        try? modelContext.save()
     }
 }
 
@@ -140,12 +173,13 @@ struct AddWordButton: View {
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(theme.onPrimary)
+                .foregroundStyle(theme.onPrimary)
                 .frame(width: 56, height: 56)
                 .background(theme.primary)
                 .clipShape(Circle())
                 .shadow(color: theme.primary.opacity(0.4), radius: 10, y: 4)
         }
+        .accessibilityLabel("Add Word")
     }
 }
 
@@ -160,12 +194,13 @@ struct ProgressStatusIndicator: View {
             showingPicker = true
         } label: {
             Image(systemName: status.icon)
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
                 .background(status.color)
                 .clipShape(Circle())
                 .shadow(color: status.color.opacity(0.35), radius: 6, y: 2)
         }
+        .accessibilityLabel("Progress: \(status.rawValue)")
         .confirmationDialog("Progress Status", isPresented: $showingPicker, titleVisibility: .visible) {
             ForEach(ProgressStatus.allCases, id: \.self) { option in
                 Button(option.rawValue) { status = option }
@@ -194,7 +229,7 @@ struct AddWordOptionsView: View {
 
             Text("Add New Word")
                 .font(.title3.weight(.bold))
-                .foregroundColor(theme.textPrimary)
+                .foregroundStyle(theme.textPrimary)
 
             TextField("Enter word", text: $newWord)
                 .focused($fieldFocused)
@@ -208,7 +243,7 @@ struct AddWordOptionsView: View {
                         .stroke(theme.surfaceStroke, lineWidth: 1)
                 )
                 .tint(theme.primary)
-                .foregroundColor(theme.textPrimary)
+                .foregroundStyle(theme.textPrimary)
 
             HStack(spacing: 16) {
                 optionButton(title: "Add Word", systemImage: "pencil", action: addWord)
@@ -221,10 +256,6 @@ struct AddWordOptionsView: View {
         .padding(24)
         .frame(maxWidth: .infinity)
         .glassCard(cornerRadius: 28, tint: theme.surface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(theme.surfaceStroke, lineWidth: 1)
-        )
         .padding(.horizontal, 24)
         .onAppear { fieldFocused = true }
         .fullScreenCover(isPresented: $showingScanner) {
@@ -239,13 +270,13 @@ struct AddWordOptionsView: View {
             VStack(spacing: 8) {
                 Image(systemName: systemImage)
                     .font(.system(size: 22))
-                    .foregroundColor(theme.primary)
+                    .foregroundStyle(theme.primary)
                     .frame(width: 64, height: 64)
                     .background(theme.primary.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 Text(title)
                     .font(.subheadline.weight(.medium))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundStyle(theme.textPrimary)
             }
             .frame(maxWidth: .infinity)
         }

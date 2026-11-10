@@ -12,19 +12,17 @@ import UniformTypeIdentifiers
 // MARK: - Root tab container
 
 struct MainTabView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(ThemeManager.self) private var themeManager
 
     var body: some View {
         TabView {
-            ContentView()
-                .tabItem {
-                    Label("Lists", systemImage: "books.vertical.fill")
-                }
+            Tab("Lists", systemImage: "books.vertical.fill") {
+                ContentView()
+            }
 
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
+            Tab("Settings", systemImage: "gearshape.fill") {
+                SettingsView()
+            }
         }
         .tint(themeManager.theme.primary)
     }
@@ -33,8 +31,11 @@ struct MainTabView: View {
 // MARK: - Lists
 
 struct ContentView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
-    @Query private var mediaItems: [MediaItem]
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(\.modelContext) private var modelContext
+    /// Explicitly ordered. Without a sort descriptor SwiftData returns rows in
+    /// whatever order the store yields, which is not stable across launches.
+    @Query(sort: \MediaItem.sortIndex) private var mediaItems: [MediaItem]
     @State private var path = NavigationPath()
     @State private var selectedMediaType: MediaType? = nil
     @State private var isShowingAddMedia = false
@@ -57,82 +58,115 @@ struct ContentView: View {
                 if filteredItems.isEmpty {
                     emptyState
                 } else {
-                    ScrollView {
-                        VStack(spacing: 14) {
-                            ForEach(filteredItems) { item in
-                                NavigationLink(value: item) {
-                                    MediaRow(item: item, theme: theme)
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        deleteItem(item)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                    }
+                    libraryList
                 }
             }
             .navigationDestination(for: MediaItem.self) { item in
                 MediaItemView(mediaItem: item)
             }
-            .navigationTitle("My Lists")
+            // Replaces the old global UINavigationBar.appearance() override,
+            // which forced a transparent background app-wide and defeated the
+            // navigation bar's adaptive scroll-edge behavior.
+            // No header for the unfiltered library: the tab already says
+            // "Lists". A filter still names itself so its state is visible.
+            .themedNavigationTitle(selectedMediaType?.pluralTitle, theme: theme)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack {
-                        Button {
-                            isShowingAddMedia = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(theme.primary)
-                        }
-
-                        Menu {
-                            Button("All") { selectedMediaType = nil }
-                            ForEach(MediaType.allCases, id: \.self) { type in
-                                Button {
-                                    selectedMediaType = type
-                                } label: {
-                                    Label(type.rawValue.capitalized,
-                                          systemImage: mediaSymbol(type))
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
-                                .foregroundColor(theme.primary)
-                        }
+                // Adding a list is the primary action, so it is the last thing
+                // that should ever be pushed into the overflow menu.
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        isShowingAddMedia = true
+                    } label: {
+                        Label("Add List", systemImage: "plus")
                     }
                 }
+                .visibilityPriority(.high)
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Filter", selection: $selectedMediaType) {
+                            Text("All").tag(MediaType?.none)
+                            ForEach(MediaType.allCases, id: \.self) { type in
+                                Label(type.rawValue.capitalized,
+                                      systemImage: mediaSymbol(type))
+                                    .tag(MediaType?.some(type))
+                            }
+                        }
+                    } label: {
+                        Label("Filter", systemImage: "line.3.horizontal.decrease")
+                    }
+                }
+                .visibilityPriority(.low)
             }
             .sheet(isPresented: $isShowingAddMedia) {
                 AddMediaView()
-                    .environmentObject(themeManager)
             }
         }
+    }
+
+    private var libraryList: some View {
+        ScrollView {
+            GlassGroup {
+                LazyVStack(spacing: 14) {
+                    ForEach(filteredItems) { item in
+                        NavigationLink(value: item) {
+                            MediaRow(item: item, theme: theme)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions {
+                            Button(role: .destructive) {
+                                deleteItem(item)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                deleteItem(item)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .reorderable()
+                }
+                .reorderContainer(for: MediaItem.self) { difference in
+                    reorderLists(difference)
+                }
+            }
+            .padding()
+        }
+        .swipeActionsContainer()
+        .toolbarMinimizationBehavior(.onScrollDown, for: .navigationBar)
     }
 
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "books.vertical")
                 .font(.system(size: 52))
-                .foregroundColor(theme.primary.opacity(0.5))
+                .foregroundStyle(theme.primary.opacity(0.5))
             Text("No lists yet")
                 .font(.title3.weight(.semibold))
-                .foregroundColor(theme.textPrimary)
+                .foregroundStyle(theme.textPrimary)
             Text("Tap + to track words from a book, movie, or podcast.")
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
-                .foregroundColor(theme.textSecondary)
+                .foregroundStyle(theme.textSecondary)
                 .padding(.horizontal, 40)
         }
     }
 
+    /// Persist a drag by rewriting `sortIndex` across the whole library.
+    private func reorderLists(_ difference: ReorderDifference<MediaItem.ID, ReorderableSingleCollectionIdentifier>) {
+        var ordered = mediaItems
+        difference.apply(to: &ordered)
+        for (offset, item) in ordered.enumerated() {
+            item.sortIndex = offset
+        }
+        try? modelContext.save()
+    }
+
     private func deleteItem(_ item: MediaItem) {
-        guard let modelContext = item.modelContext else { return }
         modelContext.delete(item)
         try? modelContext.save()
     }
@@ -148,7 +182,7 @@ private struct MediaRow: View {
         HStack(spacing: 14) {
             Image(systemName: mediaSymbol(item.mediaType))
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(theme.media(item.mediaType))
+                .foregroundStyle(theme.media(item.mediaType))
                 .frame(width: 44, height: 44)
                 .background(theme.media(item.mediaType).opacity(0.15))
                 .clipShape(Circle())
@@ -156,10 +190,10 @@ private struct MediaRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title)
                     .font(.headline)
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundStyle(theme.textPrimary)
                 Text("\(item.learnedWords.count) words • \(item.creator)")
                     .font(.caption)
-                    .foregroundColor(theme.textSecondary)
+                    .foregroundStyle(theme.textSecondary)
                     .lineLimit(1)
             }
 
@@ -167,30 +201,31 @@ private struct MediaRow: View {
 
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
-                .foregroundColor(theme.textSecondary.opacity(0.6))
+                .foregroundStyle(theme.textSecondary.opacity(0.6))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(cornerRadius: 18, tint: theme.surface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(theme.surfaceStroke, lineWidth: 1)
-        )
     }
 }
 
 // MARK: - Add media
 
 struct AddMediaView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(ThemeManager.self) private var themeManager
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \MediaItem.sortIndex) private var mediaItems: [MediaItem]
 
     @State private var title = ""
     @State private var creator = ""
     @State private var selectedType: MediaType = .book
-    @State private var fandomWiki = ""
+
+    // Wiki detection state.
+    @State private var detection: WikiDetectionState = .idle
+    @State private var isEditingWikiManually = false
+    @State private var manualWiki = ""
 
     private var theme: AppTheme { themeManager.theme }
 
@@ -199,45 +234,39 @@ struct AddMediaView: View {
             ZStack {
                 theme.background.ignoresSafeArea()
 
-                VStack(spacing: 18) {
-                    TextField("Title", text: $title)
-                        .padding()
-                        .glassCard(cornerRadius: 14, tint: theme.surface)
-                        .tint(theme.primary)
-
-                    TextField("Creator", text: $creator)
-                        .padding()
-                        .glassCard(cornerRadius: 14, tint: theme.surface)
-                        .tint(theme.primary)
-
-                    Picker("Media Type", selection: $selectedType) {
-                        ForEach(MediaType.allCases, id: \.self) { type in
-                            Label(type.rawValue.capitalized,
-                                  systemImage: mediaSymbol(type))
-                                .tag(type)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        TextField("Fandom wiki (optional)", text: $fandomWiki)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                GlassGroup(spacing: 18) {
+                    VStack(spacing: 18) {
+                        TextField("Title", text: $title)
                             .padding()
                             .glassCard(cornerRadius: 14, tint: theme.surface)
                             .tint(theme.primary)
-                        Text("For invented words. Enter the wiki subdomain, e.g. \u{201C}dune\u{201D} for dune.fandom.com.")
-                            .font(.caption)
-                            .foregroundColor(theme.textSecondary)
-                            .padding(.horizontal, 4)
-                    }
 
-                    Spacer()
+                        TextField("Creator", text: $creator)
+                            .padding()
+                            .glassCard(cornerRadius: 14, tint: theme.surface)
+                            .tint(theme.primary)
+
+                        Picker("Media Type", selection: $selectedType) {
+                            ForEach(MediaType.allCases, id: \.self) { type in
+                                Label(type.rawValue.capitalized,
+                                      systemImage: mediaSymbol(type))
+                                    .tag(type)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        wikiSection
+
+                        Spacer()
+                    }
                 }
                 .padding()
             }
             .navigationTitle("Add Media")
             .navigationBarTitleDisplayMode(.inline)
+            // Detection is keyed off the title and debounced inside the task,
+            // which SwiftUI cancels and restarts on each keystroke.
+            .task(id: title) { await detectWiki() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -254,25 +283,150 @@ struct AddMediaView: View {
         .tint(theme.primary)
     }
 
+    /// Wiki row: shows what detection found, and only offers a text field when
+    /// the user wants to override it.
+    @ViewBuilder
+    private var wikiSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if isEditingWikiManually {
+                TextField("Wiki subdomain, e.g. dune", text: $manualWiki)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding()
+                    .glassCard(cornerRadius: 14, tint: theme.surface)
+                    .tint(theme.primary)
+
+                HStack {
+                    Text("Used for invented words, e.g. \u{201C}dune\u{201D} for dune.fandom.com.")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                    Spacer()
+                    Button("Use automatic") {
+                        manualWiki = ""
+                        isEditingWikiManually = false
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+                .padding(.horizontal, 4)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: detection.symbol)
+                        .foregroundStyle(detection.isFound ? theme.primary : theme.textSecondary)
+                        .accessibilityHidden(true)
+                    Text(detection.message)
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                        .lineLimit(2)
+                    Spacer()
+                    Button(detection.isFound ? "Change" : "Set manually") {
+                        isEditingWikiManually = true
+                    }
+                    .font(.caption.weight(.semibold))
+                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: isEditingWikiManually)
+    }
+
+    /// Debounced wiki lookup for the current title.
+    private func detectWiki() async {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 2 else {
+            detection = .idle
+            return
+        }
+
+        // Wait out further typing. `.task(id:)` cancels this on the next
+        // keystroke, so only a settled title reaches the network.
+        do {
+            try await Task.sleep(for: .milliseconds(500))
+        } catch {
+            return
+        }
+
+        detection = .searching
+        let found = await FandomDirectory.detect(title: trimmed)
+        guard !Task.isCancelled else { return }
+        detection = found.map { .found($0) } ?? .notFound
+    }
+
     private func addMedia() {
-        let wiki = fandomWiki.trimmingCharacters(in: .whitespacesAndNewlines)
+        let manual = manualWiki.trimmingCharacters(in: .whitespacesAndNewlines)
+        let useManual = isEditingWikiManually && !manual.isEmpty
+
         let newItem = MediaItem(
             title: title,
             creator: creator,
             mediaType: selectedType,
-            fandomWiki: wiki.isEmpty ? nil : wiki
+            fandomWiki: useManual ? manual : detection.wiki?.slug,
+            fandomWikiName: useManual ? nil : detection.wiki?.name,
+            fandomWikiIsManual: useManual,
+            // Only claim detection ran if it actually finished, so an item added
+            // before the probe settled still gets one later.
+            fandomWikiDetectionAttempted: useManual || detection.hasSettled,
+            // New lists land at the bottom of the user's ordering.
+            sortIndex: (mediaItems.map(\.sortIndex).max() ?? -1) + 1
         )
         modelContext.insert(newItem)
         try? modelContext.save()
     }
 }
 
+// MARK: - Wiki detection state
+
+/// Outcome of looking for a Fandom wiki for a title.
+enum WikiDetectionState: Equatable {
+    case idle
+    case searching
+    case found(DetectedWiki)
+    case notFound
+
+    var wiki: DetectedWiki? {
+        if case .found(let wiki) = self { return wiki }
+        return nil
+    }
+
+    var isFound: Bool { wiki != nil }
+
+    /// Whether the probe reached a conclusion (as opposed to never running).
+    var hasSettled: Bool {
+        switch self {
+        case .found, .notFound: return true
+        case .idle, .searching: return false
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .idle:      return "sparkle.magnifyingglass"
+        case .searching: return "sparkle.magnifyingglass"
+        case .found:     return "checkmark.circle.fill"
+        case .notFound:  return "questionmark.circle"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .idle:
+            return "Enter a title to find its wiki automatically."
+        case .searching:
+            return "Looking for a wiki\u{2026}"
+        case .found(let wiki):
+            return "Using \(wiki.name)"
+        case .notFound:
+            return "No wiki found. Invented words may not resolve."
+        }
+    }
+}
+
 // MARK: - Settings
 
 struct SettingsView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(ThemeManager.self) private var themeManager
     @Environment(\.modelContext) private var modelContext
-    @Query private var mediaItems: [MediaItem]
+    @Query(sort: \MediaItem.sortIndex) private var mediaItems: [MediaItem]
 
     @State private var exportDocument: TransferDocument?
     @State private var exportContentType: UTType = .json
@@ -297,7 +451,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("COLOR PACK")
                                 .font(.caption.weight(.bold))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundStyle(theme.textSecondary)
                                 .padding(.leading, 4)
 
                             LazyVGrid(columns: columns, spacing: 16) {
@@ -319,7 +473,7 @@ struct SettingsView: View {
                     .padding()
                 }
             }
-            .navigationTitle("Settings")
+            .themedNavigationTitle(nil, theme: theme)
             .fileExporter(
                 isPresented: $showingExporter,
                 document: exportDocument,
@@ -344,7 +498,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("YOUR DATA")
                 .font(.caption.weight(.bold))
-                .foregroundColor(theme.textSecondary)
+                .foregroundStyle(theme.textSecondary)
                 .padding(.leading, 4)
 
             LazyVGrid(columns: columns, spacing: 16) {
@@ -369,7 +523,7 @@ struct SettingsView: View {
 
             Text("\(mediaItems.count) lists • \(mediaItems.reduce(0) { $0 + $1.learnedWords.count }) words. Export to back up or analyze elsewhere; import adds lists that aren\u{2019}t already here.")
                 .font(.caption)
-                .foregroundColor(theme.textSecondary)
+                .foregroundStyle(theme.textSecondary)
                 .padding(.horizontal, 4)
         }
     }
@@ -379,11 +533,11 @@ struct SettingsView: View {
             VStack(spacing: 12) {
                 Image(systemName: systemImage)
                     .font(.title2)
-                    .foregroundColor(theme.primary)
+                    .foregroundStyle(theme.primary)
 
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(theme.textPrimary)
+                    .foregroundStyle(theme.textPrimary)
                     .multilineTextAlignment(.center)
             }
             .padding(.vertical, 22)
@@ -427,17 +581,17 @@ struct SettingsView: View {
             HStack(spacing: 12) {
                 Image(systemName: theme.symbol)
                     .font(.title2)
-                    .foregroundColor(theme.onPrimary)
+                    .foregroundStyle(theme.onPrimary)
                     .frame(width: 46, height: 46)
                     .background(theme.primary)
                     .clipShape(Circle())
                 VStack(alignment: .leading, spacing: 2) {
                     Text(theme.name)
                         .font(.headline)
-                        .foregroundColor(theme.textPrimary)
+                        .foregroundStyle(theme.textPrimary)
                     Text("Active color pack")
                         .font(.caption)
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
                 Spacer()
             }
@@ -446,7 +600,7 @@ struct SettingsView: View {
                 ForEach(["Melange", "Fremen", "Spice"], id: \.self) { chip in
                     Text(chip)
                         .font(.caption.weight(.medium))
-                        .foregroundColor(theme.textPrimary)
+                        .foregroundStyle(theme.textPrimary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(theme.accent.opacity(0.30))
@@ -457,10 +611,6 @@ struct SettingsView: View {
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(cornerRadius: 22, tint: theme.surface)
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(theme.surfaceStroke, lineWidth: 1)
-        )
     }
 }
 
@@ -476,15 +626,15 @@ private struct ColorPackCard: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Image(systemName: t.symbol)
-                        .foregroundColor(t.primary)
+                        .foregroundStyle(t.primary)
                     Spacer()
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(isSelected ? t.primary : t.textSecondary.opacity(0.4))
+                        .foregroundStyle(isSelected ? t.primary : t.textSecondary.opacity(0.4))
                 }
 
                 Text(t.name)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(t.textPrimary)
+                    .foregroundStyle(t.textPrimary)
 
                 HStack(spacing: 6) {
                     swatch(t.primary)
@@ -552,7 +702,7 @@ struct TransferDocument: FileDocument {
 
         return MainTabView()
             .modelContainer(container)
-            .environmentObject(ThemeManager.shared)
+            .environment(ThemeManager.shared)
     } catch {
         return Text("Failed to create preview: \(error.localizedDescription)")
     }
@@ -566,7 +716,7 @@ struct TransferDocument: FileDocument {
 
         return SettingsView()
             .modelContainer(container)
-            .environmentObject(ThemeManager.shared)
+            .environment(ThemeManager.shared)
     } catch {
         return Text("Failed to create preview: \(error.localizedDescription)")
     }

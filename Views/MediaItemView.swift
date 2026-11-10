@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct MediaItemView: View {
-    @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(ThemeManager.self) private var themeManager
     @Bindable var mediaItem: MediaItem
     @State private var showingAddWordOptions = false
     @State private var showingSourceEditor = false
@@ -14,18 +14,18 @@ struct MediaItemView: View {
             theme.background.ignoresSafeArea()
 
             // Main content
-            VStack(spacing: 20) {
-                HeaderBlock(title: mediaItem.title,
-                            creator: mediaItem.creator,
-                            mediaType: mediaItem.mediaType,
-                            theme: theme)
+            GlassGroup(spacing: 20) {
+                VStack(spacing: 20) {
+                    HeaderBlock(title: mediaItem.title,
+                                creator: mediaItem.creator,
+                                mediaType: mediaItem.mediaType,
+                                theme: theme)
 
-                WordCountBlock(count: mediaItem.learnedWords.count, theme: theme)
+                    WordCountBlock(count: mediaItem.learnedWords.count, theme: theme)
 
-                LearnedWordsBlock(words: mediaItem.learnedWords,
-                                  fandomWiki: mediaItem.fandomWiki,
-                                  theme: theme)
-                    .frame(maxHeight: .infinity)
+                    LearnedWordsBlock(mediaItem: mediaItem, theme: theme)
+                        .frame(maxHeight: .infinity)
+                }
             }
             .padding()
 
@@ -64,15 +64,20 @@ struct MediaItemView: View {
         .navigationBarTitleDisplayMode(.inline)
         .animation(.spring(response: 0.38, dampingFraction: 0.82), value: showingAddWordOptions)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            // Pinned so the word-source editor stays reachable even when the
+            // bar is constrained and other content collapses into overflow.
+            ToolbarItem(placement: .topBarPinnedTrailing) {
                 Button {
                     showingSourceEditor = true
                 } label: {
-                    Image(systemName: "book.closed")
-                        .foregroundColor(theme.primary)
+                    Label("Word Source", systemImage: "book.closed")
                 }
             }
         }
+        .tint(theme.primary)
+        // Covers items created before detection existed, imported items, and
+        // anything added before its probe settled. No-ops once attempted.
+        .task { await mediaItem.detectFandomWikiIfNeeded() }
         .sheet(isPresented: $showingSourceEditor) {
             SourceWikiEditor(mediaItem: mediaItem, theme: theme)
         }
@@ -93,6 +98,7 @@ struct SourceWikiEditor: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var wiki = ""
+    @State private var isRedetecting = false
 
     var body: some View {
         NavigationStack {
@@ -100,22 +106,39 @@ struct SourceWikiEditor: View {
                 theme.background.ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Words that aren\u{2019}t in a standard dictionary (invented or franchise-specific terms) are looked up in this Fandom wiki.")
+                    Text("Words that aren\u{2019}t in a standard dictionary (invented or franchise-specific terms) are looked up in this Fandom wiki. faff finds it from the title \u{2014} you only need to set it if that misses.")
                         .font(.subheadline)
-                        .foregroundColor(theme.textSecondary)
+                        .foregroundStyle(theme.textSecondary)
 
-                    TextField("Fandom wiki subdomain, e.g. dune", text: $wiki)
+                    currentSource
+
+                    TextField("Wiki subdomain, e.g. dune", text: $wiki)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .padding()
                         .glassCard(cornerRadius: 14, tint: theme.surface)
                         .tint(theme.primary)
 
-                    if !wiki.trimmingCharacters(in: .whitespaces).isEmpty {
+                    if !hostPreview.isEmpty {
                         Text("Resolves to \(hostPreview).fandom.com")
                             .font(.caption)
-                            .foregroundColor(theme.textSecondary)
+                            .foregroundStyle(theme.textSecondary)
                     }
+
+                    Button {
+                        Task { await redetect() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            if isRedetecting {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Image(systemName: "sparkle.magnifyingglass")
+                            }
+                            Text(isRedetecting ? "Searching\u{2026}" : "Detect from title again")
+                        }
+                        .font(.subheadline.weight(.medium))
+                    }
+                    .disabled(isRedetecting)
 
                     Spacer()
                 }
@@ -129,8 +152,7 @@ struct SourceWikiEditor: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        let trimmed = wiki.trimmingCharacters(in: .whitespacesAndNewlines)
-                        mediaItem.fandomWiki = trimmed.isEmpty ? nil : trimmed
+                        mediaItem.setManualFandomWiki(wiki)
                         dismiss()
                     }
                 }
@@ -140,9 +162,41 @@ struct SourceWikiEditor: View {
         .onAppear { wiki = mediaItem.fandomWiki ?? "" }
     }
 
+    @ViewBuilder
+    private var currentSource: some View {
+        if let name = mediaItem.fandomWikiDisplayName {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(theme.primary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(theme.textPrimary)
+                    Text(mediaItem.fandomWikiIsManual ? "Set by you" : "Detected from the title")
+                        .font(.caption)
+                        .foregroundStyle(theme.textSecondary)
+                }
+                Spacer()
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .glassCard(cornerRadius: 14, tint: theme.surface)
+        }
+    }
+
+    /// Clear the manual override and probe the title again.
+    private func redetect() async {
+        isRedetecting = true
+        mediaItem.setManualFandomWiki(nil)
+        await mediaItem.detectFandomWikiIfNeeded()
+        wiki = mediaItem.fandomWiki ?? ""
+        isRedetecting = false
+    }
+
     private var hostPreview: String {
-        let trimmed = wiki.trimmingCharacters(in: .whitespaces)
-        return trimmed.replacingOccurrences(of: ".fandom.com", with: "")
+        wiki.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: ".fandom.com", with: "")
     }
 }
 
@@ -163,7 +217,7 @@ struct SourceWikiEditor: View {
             MediaItemView(mediaItem: exampleItem)
         }
         .modelContainer(container)
-        .environmentObject(ThemeManager.shared)
+        .environment(ThemeManager.shared)
     } catch {
         return Text("Failed to create preview: \(error.localizedDescription)")
     }
