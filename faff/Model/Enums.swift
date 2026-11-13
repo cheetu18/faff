@@ -10,6 +10,16 @@ import SwiftUI
 
 enum MediaType: String, Codable, CaseIterable {
     case book, movie, podcast, other
+
+    /// Pluralized label used for filtered list titles.
+    var pluralTitle: String {
+        switch self {
+        case .book:    return "Books"
+        case .movie:   return "Movies"
+        case .podcast: return "Podcasts"
+        case .other:   return "Other"
+        }
+    }
 }
 
 enum ProgressStatus: String, Codable, CaseIterable {

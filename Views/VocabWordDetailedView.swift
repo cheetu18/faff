@@ -10,31 +10,32 @@ import SwiftData
 import AVFoundation
 
 struct VocabWordDetailView: View {
+    @Environment(ThemeManager.self) private var themeManager
     @Bindable var vocabWord: VocabWord
     var fandomWiki: String? = nil
     @State private var lookup: WordLookup?
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var audioPlayer: AVPlayer?
+    @State private var pronunciation = PronunciationPlayer()
     @State private var isShowingAddContextSheet = false
-    
-    let backgroundColor = Color(red: 0.98, green: 0.96, blue: 0.94) // Cream color
-    let accentColor = Color.black
-    let gradientColors = [Color.duckGold, Color.yellow, Color.orange]
-    //let gradientColors = [Color.blue, Color.purple]
+
+    private var theme: AppTheme { themeManager.theme }
 
     var body: some View {
         ZStack {
-            backgroundColor.ignoresSafeArea()
-            
+            theme.background.ignoresSafeArea()
+
             ScrollView {
-                VStack(spacing: 20) {
-                    wordHeader
-                    phoneticSection
-                    contentSection
-                    contextSection
-                    Spacer()
-                    learnButton
+                // One container so the sibling glass surfaces blend and morph
+                // together instead of compositing independently.
+                GlassGroup(spacing: 20) {
+                    VStack(spacing: 20) {
+                        wordHeader
+                        phoneticSection
+                        contentSection
+                        contextSection
+                        Spacer()
+                    }
                 }
                 .padding()
             }
@@ -44,77 +45,79 @@ struct VocabWordDetailView: View {
             await fetchDefinition()
         }
         .id(vocabWord.word)
+        .tint(theme.primary)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Task { await fetchDefinition(forceRefresh: true) }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Label("Refresh Definition", systemImage: "arrow.clockwise")
                 }
                 .disabled(isLoading)
             }
         }
         .sheet(isPresented: $isShowingAddContextSheet) {
-            AddContextView(vocabWord: vocabWord)
+            AddContextView(vocabWord: vocabWord, theme: theme)
         }
     }
-    
+
     private var wordHeader: some View {
         HStack {
             Text(vocabWord.word)
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-                .foregroundColor(accentColor)
-            
+                // Scales with Dynamic Type rather than being pinned at 40pt.
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                .foregroundStyle(theme.textPrimary)
+
             Spacer()
-            
-            Button(action: {
+
+            Button {
                 vocabWord.tracked.toggle()
-            }) {
+            } label: {
                 Image(systemName: vocabWord.tracked ? "star.fill" : "star")
-                    .foregroundColor(vocabWord.tracked ? .yellow : .gray)
+                    .foregroundStyle(vocabWord.tracked ? theme.primary : theme.textSecondary)
                     .font(.title)
             }
+            .accessibilityLabel(vocabWord.tracked ? "Untrack word" : "Track word")
         }
         .padding()
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+        .glassCard(cornerRadius: 18, tint: theme.surface)
     }
-    
+
     private var phoneticSection: some View {
         Group {
             if let phonetic = vocabWord.phonetic {
                 HStack {
                     Text(phonetic)
                         .font(.title3)
-                        .foregroundColor(.black)
-                    
-                    if let phoneticUrl = vocabWord.phoneticUrl {
-                        Button(action: {
-                            playAudio(url: phoneticUrl)
-                        }) {
-                            Image(systemName: "speaker.wave.2.fill")
-                                .foregroundColor(.white)
-                                .padding(10)
-                                .background(accentColor)
-                                .clipShape(Circle())
-                        }
+                        .foregroundStyle(theme.textPrimary)
+
+                    // Always offered: plays the recording when one is available
+                    // and falls back to on-device speech otherwise.
+                    Button {
+                        pronunciation.play(word: vocabWord.word, audioURL: vocabWord.phoneticUrl)
+                    } label: {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .foregroundStyle(theme.onPrimary)
+                            .padding(10)
+                            .background(theme.primary)
+                            .clipShape(Circle())
                     }
+                    .accessibilityLabel("Play pronunciation")
                 }
                 .padding()
-                .background(Color.white)
-                .cornerRadius(10)
-                .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .glassCard(cornerRadius: 14, tint: theme.secondary.opacity(0.25))
             }
         }
     }
-    
+
     private var contentSection: some View {
         Group {
             if isLoading {
                 ProgressView()
                     .scaleEffect(1.5)
-                    .foregroundColor(accentColor)
+                    .tint(theme.primary)
+                    .padding(.vertical, 24)
             } else if let lookup {
                 VStack(alignment: .leading, spacing: 12) {
                     sourceBadge(lookup)
@@ -128,16 +131,14 @@ struct VocabWordDetailView: View {
             } else if let error = errorMessage {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(error)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.textPrimary)
                     Text("You can still add your own context below.")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(Color.white)
-                .cornerRadius(10)
-                .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+                .glassCard(cornerRadius: 14, tint: theme.surface)
             }
         }
     }
@@ -149,11 +150,10 @@ struct VocabWordDetailView: View {
             Text(lookup.isLore ? "Lore from \(lookup.sourceLabel)" : "from \(lookup.sourceLabel)")
                 .font(.caption.weight(.semibold))
         }
-        .foregroundColor(.secondary)
+        .foregroundStyle(theme.textSecondary)
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
-        .background(Color.black.opacity(0.05))
-        .clipShape(Capsule())
+        .glassCard(cornerRadius: 12, tint: theme.accent.opacity(0.20))
     }
 
     private func dictionaryContent(_ meanings: [Meaning]) -> some View {
@@ -164,111 +164,77 @@ struct VocabWordDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+        .glassCard(cornerRadius: 18, tint: theme.surface)
     }
 
     private func proseContent(_ text: String) -> some View {
         Text(text)
             .font(.body)
-            .foregroundColor(.black)
+            .foregroundStyle(theme.textPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(Color.white)
-            .cornerRadius(15)
-            .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+            .glassCard(cornerRadius: 18, tint: theme.surface)
     }
-    
+
     private func meaningSection(_ meaning: Meaning) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(meaning.partOfSpeech)
                 .font(.headline)
-                .foregroundColor(accentColor)
-            
+                .foregroundStyle(theme.primary)
+
             ForEach(meaning.definitions.indices, id: \.self) { index in
                 definitionSection(meaning.definitions[index], index: index)
             }
         }
     }
-    
+
     private func definitionSection(_ definition: Definition, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text("\(index + 1). \(definition.definition)")
                 .font(.body)
-            
+                .foregroundStyle(theme.textPrimary)
+
             if let example = definition.example {
                 Text("Example: \(example)")
                     .italic()
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(theme.textSecondary)
             }
         }
         .padding(.vertical, 5)
     }
-    
+
     private var contextSection: some View {
-        Group {
-            if let context = vocabWord.context {
-                Button(action: {
-                    isShowingAddContextSheet = true
-                }) {
-                    VStack(alignment: .leading) {
-                        Text("Context")
-                            .font(.headline)
-                            .foregroundColor(accentColor)
-                        Text(context)
-                            .foregroundColor(.black)
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .shadow(color: Color.gray.opacity(0.2), radius: 5, x: 0, y: 2)
+        Button {
+            isShowingAddContextSheet = true
+        } label: {
+            if let context = vocabWord.context, !context.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Context")
+                        .font(.headline)
+                        .foregroundStyle(theme.primary)
+                    Text(context)
+                        .foregroundStyle(theme.textPrimary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .glassCard(cornerRadius: 14, tint: theme.surface)
             } else {
-                Button(action: {
-                    isShowingAddContextSheet = true
-                }) {
+                HStack(spacing: 8) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.black)
+                        .foregroundStyle(theme.primary)
                         .symbolEffect(.wiggle)
                     Text("Add Context")
                         .font(.title3)
-                        .foregroundColor(.black)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    //.background(
-                        //RoundedRectangle(cornerRadius: 10)
-                         //   .fill(accentColor)
-                   // )
+                        .foregroundStyle(theme.textPrimary)
+                    Spacer()
                 }
-                .shadow(color: Color.gray.opacity(0.3), radius: 5, x: 0, y: 2)
+                .padding()
+                .glassCard(cornerRadius: 14, tint: theme.surface)
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(vocabWord.context?.isEmpty == false ? "Edit context" : "Add context")
     }
-      
-    //Text(phonetic)
-     //   .font(.title3)
-      //  .foregroundColor(.black)
-
-    private var learnButton: some View {
-        Button(action: {
-            // Action for learn button
-            print("Learn button tapped")
-        }) {
-            Text("Learn")
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(
-                    Capsule()
-                        .fill(LinearGradient(gradient: Gradient(colors: gradientColors), startPoint: .leading, endPoint: .trailing))
-                )
-        }
-        .padding(.horizontal)
-        .shadow(color: Color.gray.opacity(0.3), radius: 5, x: 0, y: 2)
-    }
-    
 
     private func fetchDefinition(forceRefresh: Bool = false) async {
         // Instant path: use the cached lookup unless a refresh was requested.
@@ -285,125 +251,102 @@ struct VocabWordDetailView: View {
             lookup = result
             vocabWord.storeLookup(result)
 
-            // Cache phonetic info when the source provided it.
-            if vocabWord.phonetic == nil {
-                vocabWord.phonetic = result.phonetic
-            }
-            if vocabWord.phoneticUrl == nil {
+            // Cache phonetic info. A manual refresh replaces the saved audio
+            // link outright so a stale or broken one can't stick around.
+            if forceRefresh {
+                vocabWord.phonetic = result.phonetic ?? vocabWord.phonetic
                 vocabWord.phoneticUrl = result.phoneticAudioURL
+            } else {
+                if vocabWord.phonetic == nil {
+                    vocabWord.phonetic = result.phonetic
+                }
+                if vocabWord.phoneticUrl == nil {
+                    vocabWord.phoneticUrl = result.phoneticAudioURL
+                }
             }
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
     }
-    
-    private func playAudio(url: String) {
-        guard let audioUrl = URL(string: url) else { return }
-        let playerItem = AVPlayerItem(url: audioUrl)
-        audioPlayer = AVPlayer(playerItem: playerItem)
-        audioPlayer?.play()
-    }
 }
+
+// MARK: - Add context
+
 struct AddContextView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var vocabWord: VocabWord
+    var theme: AppTheme = ColorPack.rubberDucky.theme
+
     @State private var newContext = ""
     @State private var isShowingScanner = false
-    
+
     var body: some View {
-        ZStack {
-            // Full-screen background
-            Color.duckCream
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 20) {
-                // Header
-                Text("Add Context")
-                    .font(.headline)
-                    .foregroundColor(.duckSlate)
-                    .padding(.top, 20)
-                
-                // Text Editor Section
-                VStack(alignment: .leading, spacing: 10) {
-                    TextEditor(text: $newContext)
-                        .frame(height: 150)
-                        .padding(8)
-                        .background(Color.white)
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.duckSlate.opacity(0.2), lineWidth: 1)
-                        )
-                }
-                .padding(.horizontal)
-                
-                // Buttons Section
-                VStack(spacing: 16) {
-                    // Scan Button
-                    Button(action: {
-                        isShowingScanner = true
-                    }) {
-                        HStack {
-                            Image(systemName: "camera")
-                            Text("Scan Context")
-                        }
-                        .foregroundColor(.duckSlate)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 30)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.duckSlate, lineWidth: 1)
-                        )
-                    }
-                    
-                    // Save Button
-                    Button(action: {
-                        vocabWord.context = newContext
-                        dismiss()
-                    }) {
-                        Text("Save")
-                            .foregroundColor(.white)
+        NavigationStack {
+            ZStack {
+                theme.background.ignoresSafeArea()
+
+                GlassGroup(spacing: 16) {
+                    VStack(spacing: 20) {
+                        TextEditor(text: $newContext)
+                            .scrollContentBackground(.hidden)
+                            .frame(height: 150)
+                            .padding(8)
+                            .glassCard(cornerRadius: 14, tint: theme.surface)
+                            .tint(theme.primary)
+                            .foregroundStyle(theme.textPrimary)
+
+                        Button {
+                            isShowingScanner = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "camera")
+                                Text("Scan Context")
+                            }
+                            .foregroundStyle(theme.primary)
                             .padding(.vertical, 12)
                             .frame(maxWidth: .infinity)
-                            .background(newContext.isEmpty ? Color.duckSlate.opacity(0.3) : Color.duckSlate)
-                            .cornerRadius(8)
+                            .glassCard(cornerRadius: 14, tint: theme.accent.opacity(0.18))
+                        }
+                        .buttonStyle(.plain)
+
+                        Spacer()
                     }
-                    .disabled(newContext.isEmpty)
                 }
-                .padding(.horizontal)
-                
-                Spacer()
+                .padding()
             }
-            
-            // Cancel Button
-            VStack {
-                HStack {
-                    Spacer()
-                    Button("Cancel") {
+            .navigationTitle("Add Context")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        vocabWord.context = newContext
                         dismiss()
                     }
-                    .foregroundColor(.duckSlate)
-                    .padding()
+                    .disabled(newContext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                Spacer()
             }
         }
+        .tint(theme.primary)
+        // Pre-fill so editing existing context doesn't silently wipe it.
+        .onAppear { newContext = vocabWord.context ?? "" }
         .fullScreenCover(isPresented: $isShowingScanner) {
-            WordScannerView(theme: ThemeManager.shared.theme, mode: .phrase) { scanned in
+            WordScannerView(theme: theme, mode: .phrase) { scanned in
                 newContext = newContext.isEmpty ? scanned
                                                 : newContext + " " + scanned
             }
         }
     }
 }
-#Preview {
-    //let config = ModelConfiguration(isStoredInMemoryOnly: true)
-   // let container = try ModelContainer(for: MediaItem.self, configurations: config)
-    
-    var sampleWord = VocabWord(word: "ubiquitous", tracked: true)
-    //var sampleWord =  VocabWord(word: "confidant", definition: "friend, someone who has your back", context: "he was a true confidant blah blah page 32", tracked: true)
 
-    VocabWordDetailView(vocabWord: sampleWord)
+#Preview {
+    let sampleWord = VocabWord(word: "ubiquitous", tracked: true)
+
+    NavigationStack {
+        VocabWordDetailView(vocabWord: sampleWord)
+    }
+    .environment(ThemeManager.shared)
 }

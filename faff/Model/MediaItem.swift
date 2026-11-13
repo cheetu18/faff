@@ -7,24 +7,103 @@ class MediaItem {
     var creator: String
     var mediaType: MediaType
     var progressStatus: ProgressStatus
-    /// Optional Fandom wiki subdomain (e.g. "dune") used to resolve invented or
-    /// franchise-specific words that aren't in a standard dictionary.
+    /// Fandom wiki subdomain (e.g. "dune") used to resolve invented or
+    /// franchise-specific words that aren't in a standard dictionary. Normally
+    /// detected from the title; the user only sets it when detection misses.
     var fandomWiki: String?
+    /// Display name of the wiki, e.g. "The One Wiki to Rule Them All". Set when
+    /// the wiki was detected, so the UI can name what it found.
+    var fandomWikiName: String?
+    /// True when the user typed the wiki themselves. Detection never overwrites
+    /// a manual choice.
+    var fandomWikiIsManual: Bool = false
+    /// Whether detection has already run for this item, so a title with no
+    /// wiki isn't re-probed on every appearance.
+    var fandomWikiDetectionAttempted: Bool = false
+    /// User-controlled position in the library, driven by drag-to-reorder.
+    /// Defaulted so the schema change is a lightweight migration.
+    var sortIndex: Int = 0
     @Relationship(deleteRule: .cascade)
     var learnedWords: [VocabWord]
 
 
-    init(title: String, creator: String, mediaType: MediaType, progressStatus: ProgressStatus = .inProgress, fandomWiki: String? = nil, learnedWords: [VocabWord] = []) {
+    init(title: String, creator: String, mediaType: MediaType, progressStatus: ProgressStatus = .inProgress, fandomWiki: String? = nil, fandomWikiName: String? = nil, fandomWikiIsManual: Bool = false, fandomWikiDetectionAttempted: Bool = false, sortIndex: Int = 0, learnedWords: [VocabWord] = []) {
         self.title = title
         self.creator = creator
         self.mediaType = mediaType
         self.progressStatus = progressStatus
         self.fandomWiki = fandomWiki
+        self.fandomWikiName = fandomWikiName
+        self.fandomWikiIsManual = fandomWikiIsManual
+        self.fandomWikiDetectionAttempted = fandomWikiDetectionAttempted
+        self.sortIndex = sortIndex
         self.learnedWords = learnedWords
+        // Stamp incoming words so they have a deterministic order from the start.
+        for (offset, word) in learnedWords.enumerated() where word.sortIndex == 0 {
+            word.sortIndex = offset
+        }
     }
-    
+
+    /// Wiki label for the UI: the detected name when known, else the raw slug.
+    var fandomWikiDisplayName: String? {
+        if let name = fandomWikiName, !name.isEmpty { return name }
+        return fandomWiki
+    }
+
+    /// Detect and store the wiki for this title, unless the user already chose
+    /// one or detection has already been tried. Safe to call on every appear.
+    @MainActor
+    func detectFandomWikiIfNeeded() async {
+        guard !fandomWikiIsManual, !fandomWikiDetectionAttempted else { return }
+
+        let detected = await FandomDirectory.detect(title: title)
+
+        // Re-check: the user may have set one manually while the probe ran.
+        guard !fandomWikiIsManual else { return }
+        fandomWikiDetectionAttempted = true
+        if let detected {
+            fandomWiki = detected.slug
+            fandomWikiName = detected.name
+        }
+        try? modelContext?.save()
+    }
+
+    /// Record a wiki the user typed, or clear it back to automatic.
+    @MainActor
+    func setManualFandomWiki(_ slug: String?) {
+        let trimmed = slug?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if trimmed.isEmpty {
+            // Clearing hands control back to detection on next appearance.
+            fandomWiki = nil
+            fandomWikiName = nil
+            fandomWikiIsManual = false
+            fandomWikiDetectionAttempted = false
+        } else {
+            fandomWiki = trimmed
+            fandomWikiName = nil
+            fandomWikiIsManual = true
+            fandomWikiDetectionAttempted = true
+        }
+        try? modelContext?.save()
+    }
+
+    /// Words in user-defined order. Always read through this rather than
+    /// `learnedWords` directly, which SwiftData returns in arbitrary order.
+    var orderedWords: [VocabWord] {
+        learnedWords.sorted { $0.sortIndex < $1.sortIndex }
+    }
+
+    /// New words go to the top, without renumbering everything else.
     func addWord(_ word: VocabWord) {
-        learnedWords.insert(word, at: 0)
+        word.sortIndex = (learnedWords.map(\.sortIndex).min() ?? 0) - 1
+        learnedWords.append(word)
+    }
+
+    /// Rewrite `sortIndex` to match the given order (used after a reorder).
+    func applyWordOrder(_ words: [VocabWord]) {
+        for (offset, word) in words.enumerated() {
+            word.sortIndex = offset
+        }
     }
 }
 // Extensions to add media-specific functionality
@@ -87,7 +166,7 @@ enum WordDataTransfer {
                 mediaType: item.mediaType.rawValue,
                 progressStatus: item.progressStatus.rawValue,
                 fandomWiki: item.fandomWiki,
-                words: item.learnedWords.map { word in
+                words: item.orderedWords.map { word in
                     WordExport(
                         word: word.word,
                         definition: plainDefinition(word),
@@ -285,19 +364,22 @@ enum WordDataTransfer {
         var keys = Set(existing.map { "\($0.title)|\($0.creator)|\($0.mediaType.rawValue)" })
         var lists = 0
         var words = 0
+        // Imported lists append below whatever is already in the library.
+        var nextSortIndex = (existing.map(\.sortIndex).max() ?? -1) + 1
 
         for export in exports {
             let key = "\(export.title)|\(export.creator)|\(export.mediaType)"
             if keys.contains(key) { continue }
             keys.insert(key)
 
-            let vocab = export.words.map { w in
+            let vocab = export.words.enumerated().map { offset, w in
                 VocabWord(word: w.word,
                           definition: w.definition,
                           context: w.context,
                           tracked: w.tracked,
                           phonetic: w.phonetic,
-                          phoneticUrl: w.phoneticUrl)
+                          phoneticUrl: w.phoneticUrl,
+                          sortIndex: offset)
             }
             let item = MediaItem(
                 title: export.title,
@@ -305,8 +387,13 @@ enum WordDataTransfer {
                 mediaType: MediaType(rawValue: export.mediaType) ?? .other,
                 progressStatus: ProgressStatus(rawValue: export.progressStatus) ?? .inProgress,
                 fandomWiki: export.fandomWiki,
+                // An imported wiki is an explicit choice, so keep it; imported
+                // items without one fall through to detection.
+                fandomWikiIsManual: export.fandomWiki != nil,
+                sortIndex: nextSortIndex,
                 learnedWords: vocab
             )
+            nextSortIndex += 1
             context.insert(item)
             lists += 1
             words += vocab.count

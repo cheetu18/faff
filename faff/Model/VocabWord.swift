@@ -21,6 +21,10 @@ class VocabWord : Identifiable {
     /// to keep the SwiftData schema simple (lightweight migration only).
     var cachedLookupJSON: String?
     var cachedAt: Date?
+    /// User-controlled position within its list. SwiftData does not guarantee
+    /// the order of a to-many relationship, so ordering is stored explicitly
+    /// and driven by drag-to-reorder. Defaulted for lightweight migration.
+    var sortIndex: Int = 0
 
     init(word: String,
          definition: String? = nil,
@@ -29,7 +33,8 @@ class VocabWord : Identifiable {
          phonetic: String? = nil,
          phoneticUrl: String? = nil,
          cachedLookupJSON: String? = nil,
-         cachedAt: Date? = nil) {
+         cachedAt: Date? = nil,
+         sortIndex: Int = 0) {
         self.word = word
         self.definition = definition
         self.context = context
@@ -38,6 +43,7 @@ class VocabWord : Identifiable {
         self.phoneticUrl = phoneticUrl
         self.cachedLookupJSON = cachedLookupJSON
         self.cachedAt = cachedAt
+        self.sortIndex = sortIndex
     }
 
     func toggle(){
