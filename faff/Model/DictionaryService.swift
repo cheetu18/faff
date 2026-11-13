@@ -487,7 +487,7 @@ class DictionaryService {
     // MARK: Networking helper
 
     /// Wikimedia and Fandom REST endpoints ask for a descriptive User-Agent.
-    static let userAgent = "faff-vocab-app/1.0 (https://faff.world)"
+    static let userAgent = "faff-vocab-app/1.0 (https://faffapp.com)"
 
     /// Default ceiling for a source that we are willing to wait on.
     private static let standardTimeout: TimeInterval = 6

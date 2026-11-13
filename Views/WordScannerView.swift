@@ -32,11 +32,20 @@ struct WordScannerView: View {
     @State private var candidate: String?
     @State private var buffer = ""
 
+    /// False on hardware with no rear camera (e.g. a Mac running the iPhone
+    /// app), where the capture session would otherwise show a black screen.
+    private let hasCamera = AVCaptureDevice.default(.builtInWideAngleCamera,
+                                                    for: .video,
+                                                    position: .back) != nil
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            switch authorization {
+            if !hasCamera {
+                unavailableView
+            } else {
+                switch authorization {
             case .authorized:
                 cameraExperience
             case .notDetermined:
@@ -45,9 +54,30 @@ struct WordScannerView: View {
                     .task { await requestAccess() }
             default:
                 deniedView
+                }
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private var unavailableView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "camera.badge.ellipsis")
+                .font(.system(size: 44))
+                .foregroundColor(.white.opacity(0.8))
+                .accessibilityHidden(true)
+            Text("No camera available")
+                .font(.title3.weight(.semibold))
+                .foregroundColor(.white)
+            Text("Scanning needs a rear camera. You can still add words by typing them.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.white.opacity(0.7))
+                .padding(.horizontal, 40)
+            Button("Close") { dismiss() }
+                .buttonStyle(.borderedProminent)
+                .tint(theme.primary)
+        }
     }
 
     private var cameraExperience: some View {

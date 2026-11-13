@@ -469,6 +469,8 @@ struct SettingsView: View {
                         }
 
                         dataSection
+
+                        aboutSection
                     }
                     .padding()
                 }
@@ -525,6 +527,60 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(theme.textSecondary)
                 .padding(.horizontal, 4)
+        }
+    }
+
+    /// Privacy policy and support links (App Review guideline 5.1.1 wants the
+    /// policy reachable inside the app), plus credit for the CC BY-SA sources
+    /// definitions are drawn from.
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("ABOUT")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(theme.textSecondary)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                aboutLink("Privacy Policy", systemImage: "hand.raised.fill",
+                          url: AppLinks.privacyPolicy)
+                Divider().padding(.leading, 48)
+                aboutLink("Support", systemImage: "questionmark.circle.fill",
+                          url: AppLinks.support)
+            }
+            .glassCard(cornerRadius: 18, tint: theme.surface)
+
+            Text("Definitions come from Wiktionary, Wikipedia, Fandom, Free Dictionary API, and Datamuse. Wiktionary, Wikipedia, and Fandom text is available under CC BY-SA 4.0.")
+                .font(.caption)
+                .foregroundStyle(theme.textSecondary)
+                .padding(.horizontal, 4)
+
+            if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+                Text("faff \(version)")
+                    .font(.caption)
+                    .foregroundStyle(theme.textSecondary.opacity(0.7))
+                    .padding(.horizontal, 4)
+            }
+        }
+    }
+
+    private func aboutLink(_ title: String, systemImage: String, url: URL) -> some View {
+        Link(destination: url) {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(theme.primary)
+                    .frame(width: 22)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .foregroundStyle(theme.textPrimary)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(theme.textSecondary.opacity(0.6))
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
         }
     }
 
@@ -664,6 +720,14 @@ private struct ColorPackCard: View {
             .frame(width: 22, height: 22)
             .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
     }
+}
+
+// MARK: - External links
+
+/// Must match the Privacy Policy URL and Support URL in App Store Connect.
+enum AppLinks {
+    static let privacyPolicy = URL(string: "https://faffapp.com")!
+    static let support = URL(string: "https://faffapp.com")!
 }
 
 // MARK: - Transfer document
